@@ -5,8 +5,6 @@ use std::iter::Peekable;
 use std::str::Chars;
 
 static SINGLE_TOKEN_MAP: phf::Map<char, TokenType> = phf_map! {
-    '<' => TokenType::Greater,
-    '/' => TokenType::Slash,
     '(' => TokenType::LeftParen,
     ')' => TokenType::RightParen,
     '{' => TokenType::LeftBrace,
@@ -17,8 +15,6 @@ static SINGLE_TOKEN_MAP: phf::Map<char, TokenType> = phf_map! {
     '+' => TokenType::Plus,
     ';' => TokenType::Semicolon,
     '*' => TokenType::Star,
-    '!' => TokenType::Bang,
-    '=' => TokenType::Equal,
 };
 
 pub struct Scanner<'a> {
@@ -52,41 +48,21 @@ impl<'a> Scanner<'a> {
         &self.tokens
     }
 
-    fn scan_next_token(&mut self) {
-        let ch = self.chars.next();
+    fn string(&mut self) {
+        ()
+    }
 
+    fn scan_next_token(&mut self) {
+        let ch = self.chars.next().unwrap_or(' ');
+        if SINGLE_TOKEN_MAP.contains_key(&ch) {
+            let token = SINGLE_TOKEN_MAP.get(&ch).unwrap().clone();
+            self.add_token(token, &ch.to_string(), Literal::None)
+        }
         match ch {
-            Some('(') => {
-                self.add_token(TokenType::LeftParen, &"(", Literal::None);
-            }
-            Some(')') => {
-                self.add_token(TokenType::RightParen, &")", Literal::None);
-            }
-            Some('{') => {
-                self.add_token(TokenType::LeftBrace, &"{", Literal::None);
-            }
-            Some('}') => {
-                self.add_token(TokenType::RightBrace, &"}", Literal::None);
-            }
-            Some(',') => {
-                self.add_token(TokenType::Comma, &",", Literal::None);
-            }
-            Some('.') => {
-                self.add_token(TokenType::Dot, &".", Literal::None);
-            }
-            Some('-') => {
-                self.add_token(TokenType::Minus, &"-", Literal::None);
-            }
-            Some('+') => {
-                self.add_token(TokenType::Plus, &"+", Literal::None);
-            }
-            Some(';') => {
-                self.add_token(TokenType::Semicolon, &";", Literal::None);
-            }
-            Some('*') => {
-                self.add_token(TokenType::Star, &"*", Literal::None);
-            }
-            Some('!') => {
+            '"' => self.string();
+            ' ' | '\t' | '\r' => (),
+            '\n' => self.line += 1,
+            '!' => {
                 let next_ch = self.chars.peek();
                 if next_ch == Some(&'=') {
                     self.add_token(TokenType::BangEqual, "!=", Literal::None);
@@ -95,7 +71,7 @@ impl<'a> Scanner<'a> {
                     self.add_token(TokenType::Bang, &"!", Literal::None);
                 }
             }
-            Some('=') => {
+            '=' => {
                 let next_ch = self.chars.peek();
                 if next_ch == Some(&'=') {
                     self.add_token(TokenType::EqualEqual, "==", Literal::None);
@@ -104,7 +80,7 @@ impl<'a> Scanner<'a> {
                     self.add_token(TokenType::Equal, "=", Literal::None);
                 }
             }
-            Some('<') => {
+            '<' => {
                 let next_ch = self.chars.peek();
                 if next_ch == Some(&'=') {
                     self.add_token(TokenType::LessEqual, "<=", Literal::None);
@@ -113,7 +89,7 @@ impl<'a> Scanner<'a> {
                     self.add_token(TokenType::Less, "<", Literal::None);
                 }
             }
-            Some('>') => {
+            '>' => {
                 let next_ch = self.chars.peek();
                 if next_ch == Some(&'=') {
                     self.add_token(TokenType::GreaterEqual, ">=", Literal::None);
@@ -122,20 +98,18 @@ impl<'a> Scanner<'a> {
                     self.add_token(TokenType::Greater, "<", Literal::None);
                 }
             }
-            Some('/') => {
+            '/' => {
                 let next_ch = self.chars.peek();
                 if next_ch == Some(&'/') {
                     let mut next = self.chars.next();
-                    while next != Some('\n') || next != None {
+                    while next != Some('\n') && next != None {
                         next = self.chars.next();
                     }
                 } else {
                     self.add_token(TokenType::Slash, "/", Literal::None);
                 }
             }
-            Some('\n') => self.line += 1,
-            None | Some(' ') | Some('\t') | Some('\r') => (),
-            Some(_) => {
+            _ => {
                 println!("Unexpected char at line: {}", self.line);
                 self.errors.push(self.line);
             }
