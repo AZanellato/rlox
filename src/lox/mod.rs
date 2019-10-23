@@ -3,6 +3,7 @@ pub mod token;
 use std::fs;
 use std::process;
 // use std::io::{Read, Write};
+extern crate phf;
 extern crate rustyline;
 
 use rustyline::error::ReadlineError;
@@ -57,7 +58,7 @@ impl Lox {
     }
 
     fn run(&self, source: String) -> () {
-        let mut scanner = scanner::Scanner::new(source);
+        let mut scanner = scanner::Scanner::new(&source);
         let tokens = scanner.scan_tokens();
         for token in tokens {
             println!("{:?}", token);
