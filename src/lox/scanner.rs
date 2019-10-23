@@ -54,13 +54,8 @@ impl<'a> Scanner<'a> {
 
         while self.chars.peek() != Some(&'"') && self.chars.peek() != None {
             match self.chars.next().unwrap() {
-                '\n' => {
-                    self.line += 1;
-                    self.chars.next();
-                }
-                ' ' | '\t' | '\r' => {
-                    self.chars.next();
-                }
+                '\n' => self.line += 1,
+                ' ' | '\t' | '\r' => (),
                 next_char => word.push(next_char),
             }
         }
