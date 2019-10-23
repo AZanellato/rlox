@@ -49,7 +49,38 @@ impl<'a> Scanner<'a> {
     }
 
     fn string(&mut self) {
-        ()
+        let line_start = self.line;
+        let mut word = Vec::new();
+
+        while self.chars.peek() != Some(&'"') && self.chars.peek() != None {
+            match self.chars.next().unwrap() {
+                '\n' => {
+                    self.line += 1;
+                    self.chars.next();
+                }
+                ' ' | '\t' | '\r' => {
+                    self.chars.next();
+                }
+                next_char => word.push(next_char),
+            }
+        }
+
+        match self.chars.peek() {
+            Some(&'"') => {
+                self.chars.next();
+                self.add_token(
+                    TokenType::String,
+                    word.into_iter().collect::<String>(),
+                    Literal::None,
+                )
+            }
+            None => {
+                println!("Unterminated string started at line: {}", line_start);
+                self.errors.push(self.line);
+            }
+
+            _ => panic!(),
+        }
     }
 
     fn scan_next_token(&mut self) {
@@ -59,7 +90,7 @@ impl<'a> Scanner<'a> {
             self.add_token(token, &ch.to_string(), Literal::None)
         }
         match ch {
-            '"' => self.string();
+            '"' => self.string(),
             ' ' | '\t' | '\r' => (),
             '\n' => self.line += 1,
             '!' => {
@@ -116,8 +147,8 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    fn add_token(&mut self, token: TokenType, token_str: &str, lit: Literal) {
-        let next_token = Token::new(token, token_str.to_owned(), lit, self.line as u32);
+    fn add_token<S: AsRef<str>>(&mut self, token: TokenType, token_str: S, lit: Literal) {
+        let next_token = Token::new(token, token_str.as_ref().to_string(), lit, self.line as u32);
         self.tokens.push(next_token);
     }
 }
