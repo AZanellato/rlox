@@ -48,6 +48,33 @@ impl<'a> Scanner<'a> {
         &self.tokens
     }
 
+    fn number(&mut self, first_digit: char) {
+        let mut number = String::new();
+        number.push(first_digit);
+
+        while self.chars.peek() != Some(&' ') && self.chars.peek() != None {
+            let chr = self.chars.peek().unwrap();
+            if chr == &'.' {
+                self.chars.next().unwrap();
+                number.push('.');
+                if self.chars.peek().unwrap_or(&' ').is_digit(10) {
+                    number.push(self.chars.next().unwrap());
+                } else {
+                    println!("Unterminated number at line: {}", self.line);
+                    self.errors.push(self.line);
+                }
+            } else if chr.is_digit(10) {
+                let digit = self.chars.next().unwrap();
+                number.push(digit);
+            } else {
+                println!("Unterminated number started at line: {}", self.line);
+                self.errors.push(self.line);
+            }
+        }
+        let parsed_number = number.parse::<f64>().unwrap();
+        self.add_token(TokenType::Number, number, Literal::F64(parsed_number))
+    }
+
     fn string(&mut self) {
         let line_start = self.line;
         let mut word = Vec::new();
@@ -63,10 +90,11 @@ impl<'a> Scanner<'a> {
         match self.chars.peek() {
             Some(&'"') => {
                 self.chars.next();
+                let word_clone = word.clone();
                 self.add_token(
                     TokenType::String,
                     word.into_iter().collect::<String>(),
-                    Literal::None,
+                    Literal::String(word_clone.into_iter().collect::<String>()),
                 )
             }
             None => {
@@ -86,6 +114,7 @@ impl<'a> Scanner<'a> {
         }
         match ch {
             '"' => self.string(),
+            '0'..='9' => self.number(ch),
             ' ' | '\t' | '\r' => (),
             '\n' => self.line += 1,
             '!' => {
