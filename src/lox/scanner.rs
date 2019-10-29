@@ -17,6 +17,37 @@ static SINGLE_TOKEN_MAP: phf::Map<char, TokenType> = phf_map! {
     '*' => TokenType::Star,
 };
 
+static KEYWORDS: phf::Map<&str, TokenType> = phf_map! {
+    "and" =>    TokenType::And,
+    "class" =>  TokenType::Class,
+    "else" =>   TokenType::Else,
+    "false" =>  TokenType::False,
+    "for" =>    TokenType::For,
+    "fun" =>    TokenType::Fun,
+    "if" =>     TokenType::If,
+    "nil" =>    TokenType::Nil,
+    "or" =>     TokenType::Or,
+    "print" =>  TokenType::Print,
+    "return" => TokenType::Return,
+    "super" =>  TokenType::Super,
+    "this" =>   TokenType::This,
+    "true" =>   TokenType::True,
+    "var" =>    TokenType::Var,
+    "while" =>  TokenType::While,
+};
+
+fn key_getter(identifier: &str) -> (bool, &str) {
+    let mut contain_key = false;
+    let mut keyword_key = "";
+    for key in KEYWORDS.keys() {
+        if key == &identifier {
+            contain_key = true;
+            keyword_key = key;
+        }
+    }
+    (contain_key, keyword_key)
+}
+
 pub struct Scanner<'a> {
     chars: Peekable<Chars<'a>>,
     tokens: Vec<Token>,
@@ -46,6 +77,29 @@ impl<'a> Scanner<'a> {
         );
         self.tokens.push(next_token);
         &self.tokens
+    }
+
+    fn identifier(&mut self, first_digit: char) {
+        let mut identifier = String::new();
+        identifier.push(first_digit);
+        while self.chars.peek() != Some(&' ') && self.chars.peek() != None {
+            match self.chars.peek().unwrap() {
+                'a'..='z' | 'A'..='Z' | '_' | '-' => {
+                    identifier.push(self.chars.next().unwrap());
+                }
+                _ => {
+                    println!("Unsupported char at line {}", self.line);
+                    self.errors.push(self.line);
+                }
+            }
+        }
+        let (contain_key, keyword_key) = key_getter(&identifier);
+        if contain_key {
+            let token = KEYWORDS.get(keyword_key).unwrap().clone();
+            self.add_token(token, identifier, Literal::None)
+        } else {
+            self.add_token(TokenType::Identifier, identifier, Literal::None);
+        }
     }
 
     fn number(&mut self, first_digit: char) {
@@ -115,6 +169,7 @@ impl<'a> Scanner<'a> {
         match ch {
             '"' => self.string(),
             '0'..='9' => self.number(ch),
+            'a'..='z' | 'A'..='Z' | '_' => self.identifier(ch),
             ' ' | '\t' | '\r' => (),
             '\n' => self.line += 1,
             '!' => {
