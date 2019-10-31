@@ -1,4 +1,4 @@
-use crate::lox::token::{Literal, Token, TokenType};
+use super::token::{Literal, Token, TokenType};
 use phf::phf_map;
 use std::char;
 use std::iter::Peekable;
@@ -76,6 +76,7 @@ impl<'a> Scanner<'a> {
             self.line as u32,
         );
         self.tokens.push(next_token);
+
         &self.tokens
     }
 
