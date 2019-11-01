@@ -14,7 +14,7 @@ pub struct Grouping {
 pub struct Binary {
     pub left: Box<Expr>,
     pub right: Box<Expr>,
-    pub token: Token,
+    pub operator: Token,
 }
 pub struct Unary {
     pub expr: Box<Expr>,

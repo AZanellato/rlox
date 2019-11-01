@@ -4,7 +4,6 @@ pub mod scanner;
 pub mod token;
 use std::fs;
 use std::process;
-// use std::io::{Read, Write};
 extern crate phf;
 extern crate rustyline;
 
@@ -64,6 +63,11 @@ impl Lox {
         let tokens = scanner.scan_tokens();
         for token in tokens {
             println!("{:?}", token);
+            let literal = self::expr::Literal {
+                token: token.clone(),
+            };
+            let expr = self::expr::Expr::Literal(literal);
+            self::ast_printer::print_node(expr)
         }
     }
 
