@@ -86,3 +86,13 @@ impl fmt::Display for Token {
         write!(f, "{:?} {:?} {:?}", self.token, self.lexeme, self.literal)
     }
 }
+
+pub type TokenList = Vec<Token>;
+
+// impl Iterator for TokenList {
+//     type Item = Token;
+
+//     fn next(&mut self) -> Option<Token> {
+//         self.next
+//     }
+// }

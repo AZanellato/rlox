@@ -18,7 +18,7 @@ pub struct Binary {
 }
 pub struct Unary {
     pub expr: Box<Expr>,
-    pub token: Token,
+    pub operator: Token,
 }
 
 pub struct Literal {
