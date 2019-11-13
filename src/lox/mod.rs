@@ -62,6 +62,9 @@ impl Lox {
     fn run(&self, source: String) -> () {
         let mut scanner = scanner::Scanner::new(&source);
         let tokens = scanner.scan_tokens();
+        for token in tokens {
+            println!("{:?}", token);
+        }
         let mut parser = parser::Parser::new(tokens);
         let maybe_expr = parser.parse();
         let expr = match maybe_expr {

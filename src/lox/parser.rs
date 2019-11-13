@@ -125,6 +125,7 @@ impl<'a> Parser<'a> {
                 Some(Expr::Literal(Literal { token: next }))
             }
             TokenType::LeftParen => {
+                self.token_list.next();
                 let expr = self.expression()?;
                 if let TokenType::RightParen = self.token_list.next().unwrap().t_type {
                     return Some(Expr::Grouping(Grouping {

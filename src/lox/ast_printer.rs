@@ -3,7 +3,7 @@ use std::io::{self, Write};
 
 pub fn print_node(expr: Expr) {
     match expr {
-        Expr::Literal(expr) => print!("({})", expr.token.lexeme),
+        Expr::Literal(expr) => print!("{} ", expr.token.lexeme),
         Expr::Grouping(expr) => print_grouping(expr),
         Expr::Binary(expr) => print_binary(expr),
         Expr::Unary(expr) => print_unary(expr),
@@ -19,13 +19,13 @@ fn print_binary(expr: Binary) {
     print!(")");
 }
 fn print_unary(expr: Unary) {
-    print!("({} ", expr.operator.lexeme);
+    print!("{}", expr.operator.lexeme);
     print_node(*expr.expr);
-    print!(")");
+    print!("");
 }
 
 fn print_grouping(expr: Grouping) {
-    print!("group (");
+    print!("(group (");
     print_node(*expr.expr);
-    print!(")");
+    print!("))");
 }
