@@ -13,13 +13,13 @@ pub fn print_node(expr: Expr) {
 }
 
 fn print_binary(expr: Binary) {
-    print!("({} ", expr.token.lexeme);
+    print!("({} ", expr.operator.lexeme);
     print_node(*expr.left);
     print_node(*expr.right);
     print!(")");
 }
 fn print_unary(expr: Unary) {
-    print!("({} ", expr.token);
+    print!("({} ", expr.operator);
     print_node(*expr.expr);
     print!(")");
 }

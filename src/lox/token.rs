@@ -60,16 +60,16 @@ pub enum Literal {
 
 #[derive(Debug, Clone)]
 pub struct Token {
-    token: TokenType,
+    pub t_type: TokenType,
     pub lexeme: String,
-    literal: Literal,
-    line: u32,
+    pub literal: Literal,
+    pub line: u32,
 }
 
 impl Token {
-    pub fn new(token: TokenType, lexeme: String, literal: Literal, line: u32) -> Self {
+    pub fn new(t_type: TokenType, lexeme: String, literal: Literal, line: u32) -> Self {
         Token {
-            token,
+            t_type,
             lexeme,
             literal,
             line,
@@ -77,22 +77,12 @@ impl Token {
     }
 
     pub fn to_string(&self) {
-        format!("{:?} {:?} {:?}", self.token, self.lexeme, self.literal);
+        format!("{:?} {:?} {:?}", self.t_type, self.lexeme, self.literal);
     }
 }
 
 impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?} {:?} {:?}", self.token, self.lexeme, self.literal)
+        write!(f, "{:?} {:?} {:?}", self.t_type, self.lexeme, self.literal)
     }
 }
-
-pub type TokenList = Vec<Token>;
-
-// impl Iterator for TokenList {
-//     type Item = Token;
-
-//     fn next(&mut self) -> Option<Token> {
-//         self.next
-//     }
-// }

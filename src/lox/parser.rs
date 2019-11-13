@@ -1,36 +1,35 @@
 use super::expr::{Binary, Expr, Grouping, Literal, Unary};
-use super::token::{Token, TokenList, TokenType};
-use std::iter::{Iterator, Peekable};
+use super::token::{Token, TokenType};
+use std::iter::Peekable;
+use std::slice::Iter;
 
 struct Parser<'a> {
-    token_list: Peekable<TokenList>,
+    token_list: Peekable<Iter<'a, Token>>,
     error: bool,
 }
 
 impl<'a> Parser<'a> {
-    fn new(token_list: Vec<Token>) -> Self {
+    fn new(borrowed_token_list: &'a Vec<Token>) -> Self {
         Parser {
-            token_list,
+            token_list: borrowed_token_list.into_iter().peekable(),
             error: false,
         }
     }
 
-    pub fn parse(&mut self) -> Expr {
+    pub fn parse(&mut self) -> Option<Expr> {
         self.expression()
     }
 
-    fn expression(&mut self) -> Expr {
+    fn expression(&mut self) -> Option<Expr> {
         self.equality()
     }
 
-    fn equality(&mut self) -> Expr {
-        let mut expr = self.comparison();
+    fn equality(&mut self) -> Option<Expr> {
+        let mut expr = self.comparison()?;
 
-        let peek = self.token_list.peek();
-
-        while let TokenType::BangEqual | TokenType::EqualEqual = peek {
-            let operator = self.token_list.next();
-            let right = Box::new(self.comparison());
+        while let TokenType::BangEqual | TokenType::EqualEqual = self.token_list.peek()?.t_type {
+            let operator = self.token_list.next()?.clone();
+            let right = Box::new(self.comparison()?);
             let left = Box::new(expr);
             expr = Expr::Binary(Binary {
                 left,
@@ -39,21 +38,19 @@ impl<'a> Parser<'a> {
             });
         }
 
-        expr
+        Some(expr)
     }
 
-    fn comparison(&mut self) -> Expr {
-        let mut expr = self.addition();
-
-        let peek = self.token_list.peek();
+    fn comparison(&mut self) -> Option<Expr> {
+        let mut expr = self.addition()?;
 
         while let TokenType::Greater
         | TokenType::GreaterEqual
         | TokenType::Less
-        | TokenType::LessEqual = peek
+        | TokenType::LessEqual = self.token_list.peek()?.t_type
         {
-            let right = Box::new(self.multiplication());
-            let operator = self.token_list.next();
+            let right = Box::new(self.multiplication()?);
+            let operator = self.token_list.next()?.clone();
             let left = Box::new(expr);
             expr = Expr::Binary(Binary {
                 left,
@@ -62,17 +59,15 @@ impl<'a> Parser<'a> {
             });
         }
 
-        expr
+        Some(expr)
     }
 
-    fn addition(&mut self) -> Expr {
-        let mut expr = self.multiplication();
+    fn addition(&mut self) -> Option<Expr> {
+        let mut expr = self.multiplication()?;
 
-        let peek = self.token_list.peek();
-
-        while let TokenType::Minus | TokenType::Plus = peek {
-            let operator = self.token_list.next();
-            let right = Box::new(self.multiplication());
+        while let TokenType::Minus | TokenType::Plus = self.token_list.peek()?.t_type {
+            let operator = self.token_list.next()?.clone();
+            let right = Box::new(self.multiplication()?);
             let left = Box::new(expr);
             expr = Expr::Binary(Binary {
                 left,
@@ -81,17 +76,18 @@ impl<'a> Parser<'a> {
             });
         }
 
-        expr
+        Some(expr)
     }
 
-    fn multiplication(&mut self) -> Expr {
-        let mut expr = self.unary();
+    fn multiplication(&mut self) -> Option<Expr> {
+        let mut expr = self.unary()?;
 
-        let peek = self.token_list.peek();
+        let peek = self.token_list.peek()?.clone();
 
-        while let TokenType::Slash | TokenType::Star = peek {
-            let operator = self.token_list.next();
-            let right = Box::new(self.unary());
+        while let TokenType::Slash | TokenType::Star = peek.t_type {
+            self.token_list.next();
+            let operator = peek.clone();
+            let right = Box::new(self.unary()?);
             let left = Box::new(expr);
             expr = Expr::Binary(Binary {
                 left,
@@ -100,35 +96,35 @@ impl<'a> Parser<'a> {
             });
         }
 
-        expr
+        Some(expr)
     }
 
-    fn unary(&mut self) -> Expr {
-        let peek = self.token_list.peek();
+    fn unary(&mut self) -> Option<Expr> {
+        let peek = self.token_list.peek()?;
 
-        if let TokenType::Bang | TokenType::Minus = peek {
-            let operator = self.token_list.next();
-            let expr = Box::new(self.unary());
-            Expr::Unary(Unary { expr, operator })
+        if let TokenType::Bang | TokenType::Minus = peek.t_type {
+            let operator = self.token_list.next()?.clone();
+            let expr = Box::new(self.unary()?);
+            Some(Expr::Unary(Unary { expr, operator }))
         } else {
-            self.primary().unwrap()
+            self.primary()
         }
     }
 
     fn primary(&mut self) -> Option<Expr> {
-        let peek = self.token_list.peek();
+        let peek = self.token_list.peek()?;
 
-        match peek {
+        match peek.t_type {
             TokenType::Number
             | TokenType::String
             | TokenType::False
             | TokenType::True
             | TokenType::Nil => Some(Expr::Literal(Literal {
-                token: self.token_list.next(),
+                token: self.token_list.next()?.clone(),
             })),
             TokenType::LeftParen => {
-                let expr = self.expression();
-                if let TokenType::RightParen = self.token_list.next() {
+                let expr = self.expression()?;
+                if let TokenType::RightParen = self.token_list.next().unwrap().t_type {
                     return Some(Expr::Grouping(Grouping {
                         expr: Box::new(expr),
                     }));
