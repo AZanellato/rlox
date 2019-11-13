@@ -76,6 +76,15 @@ impl Token {
         }
     }
 
+    pub fn empty_token(line: u32) -> Self {
+        Self {
+            t_type: TokenType::EOF,
+            lexeme: "".to_owned(),
+            literal: Literal::None,
+            line,
+        }
+    }
+
     pub fn to_string(&self) {
         format!("{:?} {:?} {:?}", self.t_type, self.lexeme, self.literal);
     }

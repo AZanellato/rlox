@@ -3,13 +3,13 @@ use super::token::{Token, TokenType};
 use std::iter::Peekable;
 use std::slice::Iter;
 
-struct Parser<'a> {
+pub struct Parser<'a> {
     token_list: Peekable<Iter<'a, Token>>,
     error: bool,
 }
 
 impl<'a> Parser<'a> {
-    fn new(borrowed_token_list: &'a Vec<Token>) -> Self {
+    pub fn new(borrowed_token_list: &'a Vec<Token>) -> Self {
         Parser {
             token_list: borrowed_token_list.into_iter().peekable(),
             error: false,
@@ -107,6 +107,7 @@ impl<'a> Parser<'a> {
             let expr = Box::new(self.unary()?);
             Some(Expr::Unary(Unary { expr, operator }))
         } else {
+            println!("{:?}", peek);
             self.primary()
         }
     }
@@ -119,9 +120,10 @@ impl<'a> Parser<'a> {
             | TokenType::String
             | TokenType::False
             | TokenType::True
-            | TokenType::Nil => Some(Expr::Literal(Literal {
-                token: self.token_list.next()?.clone(),
-            })),
+            | TokenType::Nil => {
+                let next = self.token_list.next()?.clone();
+                Some(Expr::Literal(Literal { token: next }))
+            }
             TokenType::LeftParen => {
                 let expr = self.expression()?;
                 if let TokenType::RightParen = self.token_list.next().unwrap().t_type {
@@ -136,6 +138,7 @@ impl<'a> Parser<'a> {
             _ => {
                 self.error = true;
                 println!("Expecting an expression");
+                println!("{:?}", peek.t_type);
                 None
             }
         }

@@ -69,13 +69,7 @@ impl<'a> Scanner<'a> {
         while self.chars.peek() != None {
             self.scan_next_token();
         }
-        let next_token = Token::new(
-            TokenType::EOF,
-            "".to_owned(),
-            Literal::None,
-            self.line as u32,
-        );
-        self.tokens.push(next_token);
+        self.tokens.push(Token::empty_token(self.line as u32));
 
         &self.tokens
     }

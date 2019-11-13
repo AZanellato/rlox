@@ -62,22 +62,23 @@ impl Lox {
     fn run(&self, source: String) -> () {
         let mut scanner = scanner::Scanner::new(&source);
         let tokens = scanner.scan_tokens();
-        for token in tokens {
-            println!("{:?}", token);
-            let literal = self::expr::Literal {
-                token: token.clone(),
-            };
-            let expr = self::expr::Expr::Literal(literal);
-            self::ast_printer::print_node(expr)
-        }
+        let mut parser = parser::Parser::new(tokens);
+        let maybe_expr = parser.parse();
+        let expr = match maybe_expr {
+            Some(expr) => expr,
+            None => expr::Expr::Literal(expr::Literal {
+                token: token::Token::empty_token(0),
+            }),
+        };
+        ast_printer::print_node(expr)
     }
 
-    fn error(&mut self, line: u32, message: String) -> () {
-        self.report(line, "".to_string(), message);
-    }
+    // fn error(&mut self, line: u32, message: String) -> () {
+    //     self.report(line, "".to_string(), message);
+    // }
 
-    fn report(&mut self, line_number: u32, locale: String, error_msg: String) -> () {
-        println!("line: {} Error {}: {}", line_number, locale, error_msg);
-        self.had_errors = true;
-    }
+    // fn report(&mut self, line_number: u32, locale: String, error_msg: String) -> () {
+    //     println!("line: {} Error {}: {}", line_number, locale, error_msg);
+    //     self.had_errors = true;
+    // }
 }
