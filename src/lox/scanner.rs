@@ -116,8 +116,14 @@ impl<'a> Scanner<'a> {
                 let digit = self.chars.next().unwrap();
                 number.push(digit);
             } else {
-                println!("Unterminated number started at line: {}", self.line);
-                self.errors.push(self.line);
+                let ch = self.chars.peek().unwrap();
+                if SINGLE_TOKEN_MAP.contains_key(&ch) {
+                    break;
+                } else {
+                    println!("Unterminated number started at line: {}", self.line);
+                    self.chars.next();
+                    self.errors.push(self.line);
+                }
             }
         }
         let parsed_number = number.parse::<f64>().unwrap();
