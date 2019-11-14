@@ -25,24 +25,37 @@ impl<'a> Parser<'a> {
     }
 
     fn equality(&mut self) -> Option<Expr> {
-        let mut expr = self.comparison()?;
+        let mut expr = self.comparison();
+        println!("equality");
+
+        if self.token_list.peek() == None {
+            return expr;
+        }
 
         while let TokenType::BangEqual | TokenType::EqualEqual = self.token_list.peek()?.t_type {
             let operator = self.token_list.next()?.clone();
             let right = Box::new(self.comparison()?);
-            let left = Box::new(expr);
-            expr = Expr::Binary(Binary {
+            let left = Box::new(expr?);
+            expr = Some(Expr::Binary(Binary {
                 left,
                 right,
                 operator,
-            });
+            }));
+            if self.token_list.peek() == None {
+                break;
+            }
         }
 
-        Some(expr)
+        expr
     }
 
     fn comparison(&mut self) -> Option<Expr> {
-        let mut expr = self.addition()?;
+        let mut expr = self.addition();
+        println!("comparison");
+
+        if self.token_list.peek() == None {
+            return expr;
+        }
 
         while let TokenType::Greater
         | TokenType::GreaterEqual
@@ -51,50 +64,65 @@ impl<'a> Parser<'a> {
         {
             let right = Box::new(self.multiplication()?);
             let operator = self.token_list.next()?.clone();
-            let left = Box::new(expr);
-            expr = Expr::Binary(Binary {
+            let left = Box::new(expr?);
+            expr = Some(Expr::Binary(Binary {
                 left,
                 right,
                 operator,
-            });
+            }));
+            if self.token_list.peek() == None {
+                break;
+            }
         }
 
-        Some(expr)
+        expr
     }
 
     fn addition(&mut self) -> Option<Expr> {
-        let mut expr = self.multiplication()?;
+        let mut expr = self.multiplication();
+        println!("addition");
 
+        if self.token_list.peek() == None {
+            return expr;
+        }
         while let TokenType::Minus | TokenType::Plus = self.token_list.peek()?.t_type {
             let operator = self.token_list.next()?.clone();
             let right = Box::new(self.multiplication()?);
-            let left = Box::new(expr);
-            expr = Expr::Binary(Binary {
+            let left = Box::new(expr?);
+            expr = Some(Expr::Binary(Binary {
                 left,
                 right,
                 operator,
-            });
+            }));
+            if self.token_list.peek() == None {
+                break;
+            }
         }
 
-        Some(expr)
+        expr
     }
 
     fn multiplication(&mut self) -> Option<Expr> {
         let mut expr = self.unary()?;
 
-        let peek = self.token_list.peek()?.clone();
-
-        while let TokenType::Slash | TokenType::Star = peek.t_type {
-            self.token_list.next();
-            let operator = peek.clone();
+        while let TokenType::Slash | TokenType::Star = self.token_list.peek()?.t_type {
+            let operator = self.token_list.next()?.clone();
             let right = Box::new(self.unary()?);
             let left = Box::new(expr);
+            println!("left {:?}", left);
+            println!("right {:?}", right);
+            println!("operator {:?}", operator);
+            println!("peek {:?}", self.token_list.peek());
             expr = Expr::Binary(Binary {
                 left,
                 right,
                 operator,
             });
+            if self.token_list.peek() == None {
+                break;
+            }
         }
+        println!("{:?}", expr);
 
         Some(expr)
     }
@@ -107,7 +135,6 @@ impl<'a> Parser<'a> {
             let expr = Box::new(self.unary()?);
             Some(Expr::Unary(Unary { expr, operator }))
         } else {
-            println!("{:?}", peek);
             self.primary()
         }
     }
@@ -143,5 +170,37 @@ impl<'a> Parser<'a> {
                 None
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    // Note this useful idiom: importing names from outer (for mod tests) scope.
+    use super::*;
+    use crate::lox::token::Literal;
+
+    #[test]
+    fn test_expression() {
+        let first_number = Token::new(TokenType::Number, "1".to_owned(), Literal::F64(1.0), 1);
+        let operator = Token::new(TokenType::Star, "*".to_owned(), Literal::None, 1);
+        let second_number = Token::new(TokenType::Number, "1".to_owned(), Literal::F64(1.0), 1);
+
+        let left = Expr::Literal(super::Literal {
+            token: first_number.clone(),
+        });
+        let right = Expr::Literal(super::Literal {
+            token: second_number.clone(),
+        });
+        let expected_expr = Expr::Binary(Binary {
+            left: Box::new(left),
+            right: Box::new(right),
+            operator: operator.clone(),
+        });
+
+        let tokens = vec![first_number, operator, second_number];
+
+        let mut parser = Parser::new(&tokens);
+        let expr = parser.parse().unwrap();
+        assert_eq!(expr, expected_expr);
     }
 }
