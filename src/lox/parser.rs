@@ -26,7 +26,6 @@ impl<'a> Parser<'a> {
 
     fn equality(&mut self) -> Option<Expr> {
         let mut expr = self.comparison();
-        println!("equality");
 
         if self.token_list.peek() == None {
             return expr;
@@ -51,7 +50,6 @@ impl<'a> Parser<'a> {
 
     fn comparison(&mut self) -> Option<Expr> {
         let mut expr = self.addition();
-        println!("comparison");
 
         if self.token_list.peek() == None {
             return expr;
@@ -80,7 +78,6 @@ impl<'a> Parser<'a> {
 
     fn addition(&mut self) -> Option<Expr> {
         let mut expr = self.multiplication();
-        println!("addition");
 
         if self.token_list.peek() == None {
             return expr;
@@ -109,10 +106,6 @@ impl<'a> Parser<'a> {
             let operator = self.token_list.next()?.clone();
             let right = Box::new(self.unary()?);
             let left = Box::new(expr);
-            println!("left {:?}", left);
-            println!("right {:?}", right);
-            println!("operator {:?}", operator);
-            println!("peek {:?}", self.token_list.peek());
             expr = Expr::Binary(Binary {
                 left,
                 right,
@@ -122,7 +115,6 @@ impl<'a> Parser<'a> {
                 break;
             }
         }
-        println!("{:?}", expr);
 
         Some(expr)
     }
