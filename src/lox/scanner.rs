@@ -90,8 +90,13 @@ impl<'a> Scanner<'a> {
         }
         let (contain_key, keyword_key) = key_getter(&identifier);
         if contain_key {
-            let token = KEYWORDS.get(keyword_key).unwrap().clone();
-            self.add_token(token, identifier, Literal::None)
+            let t_type = KEYWORDS.get(keyword_key).unwrap();
+            match t_type {
+                TokenType::True => self.add_token(*t_type, identifier, Literal::Boolean(true)),
+                TokenType::False => self.add_token(*t_type, identifier, Literal::Boolean(false)),
+                TokenType::Nil => self.add_token(*t_type, identifier, Literal::Nil),
+                _ => self.add_token(*t_type, identifier, Literal::None),
+            }
         } else {
             self.add_token(TokenType::Identifier, identifier, Literal::None);
         }
