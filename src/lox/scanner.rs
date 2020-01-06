@@ -211,7 +211,7 @@ impl<'a> Scanner<'a> {
                     self.add_token(TokenType::GreaterEqual, ">=", Literal::None);
                     self.chars.next();
                 } else {
-                    self.add_token(TokenType::Greater, "<", Literal::None);
+                    self.add_token(TokenType::Greater, ">", Literal::None);
                 }
             }
             '/' => {
