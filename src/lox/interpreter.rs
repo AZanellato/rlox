@@ -20,14 +20,12 @@ pub fn evaluate_node(expr: Expr) -> Value {
 }
 
 fn evalute_literal(expr: Literal) -> Value {
-    let value = match expr.token.literal {
+    match expr.token.literal {
         token::Literal::String(string) => Value::String(string),
         token::Literal::F64(f64) => Value::F64(f64),
         token::Literal::Boolean(boolean) => Value::Boolean(boolean),
         _ => Value::Nil,
-    };
-    println!("{:?}", value);
-    value
+    }
 }
 
 fn evaluate_unary(unary_expr: Unary) -> Value {
@@ -46,7 +44,7 @@ fn evaluate_binary(expr: Binary) -> Value {
     let left_value = evaluate_node(*expr.left);
     let right_value = evaluate_node(*expr.right);
 
-    let value = match expr.operator.t_type {
+    match expr.operator.t_type {
         token::TokenType::Plus => left_value + right_value,
         token::TokenType::Minus => left_value - right_value,
         token::TokenType::Slash => left_value / right_value,
@@ -57,10 +55,8 @@ fn evaluate_binary(expr: Binary) -> Value {
         token::TokenType::LessEqual => Value::Boolean(left_value <= right_value),
         token::TokenType::EqualEqual => Value::Boolean(left_value == right_value),
         token::TokenType::BangEqual => Value::Boolean(left_value != right_value),
-        _ => panic!("Not implemented yet"),
-    };
-    println!("{:?}", value);
-    value
+        _ => panic!("Not implemented"),
+    }
 }
 
 fn truthyness(value: Value) -> bool {
