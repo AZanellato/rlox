@@ -51,14 +51,12 @@ fn evaluate_binary(expr: Binary) -> Value {
         token::TokenType::Minus => left_value - right_value,
         token::TokenType::Slash => left_value / right_value,
         token::TokenType::Star => left_value * right_value,
-        token::TokenType::Greater => {
-            let comparison = Value::Boolean(left_value > right_value);
-            println!("{:?}", comparison);
-            comparison
-        }
+        token::TokenType::Greater => Value::Boolean(left_value > right_value),
         token::TokenType::GreaterEqual => Value::Boolean(left_value >= right_value),
         token::TokenType::Less => Value::Boolean(left_value < right_value),
         token::TokenType::LessEqual => Value::Boolean(left_value <= right_value),
+        token::TokenType::EqualEqual => Value::Boolean(left_value == right_value),
+        token::TokenType::BangEqual => Value::Boolean(left_value != right_value),
         _ => panic!("Not implemented yet"),
     };
     println!("{:?}", value);

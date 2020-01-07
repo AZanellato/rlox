@@ -60,8 +60,8 @@ impl<'a> Parser<'a> {
         | TokenType::Less
         | TokenType::LessEqual = self.token_list.peek()?.t_type
         {
-            let right = Box::new(self.multiplication()?);
             let operator = self.token_list.next()?.clone();
+            let right = Box::new(self.multiplication()?);
             let left = Box::new(expr?);
             expr = Some(Expr::Binary(Binary {
                 left,
