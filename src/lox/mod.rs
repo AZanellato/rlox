@@ -60,7 +60,7 @@ impl Lox {
         }
     }
 
-    fn run(&self, source: String) -> () {
+    fn run(&self, source: String) {
         let mut scanner = scanner::Scanner::new(&source);
         let tokens = scanner.scan_tokens();
         // for token in tokens {
@@ -74,7 +74,6 @@ impl Lox {
                 token: token::Token::empty_token(0),
             }),
         };
-        // ast_printer::print_node(expr);
         interpreter::evaluate_node(expr);
     }
 

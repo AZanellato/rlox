@@ -134,3 +134,121 @@ impl Not for Value {
         Value::Boolean(!truthyness(self))
     }
 }
+
+mod tests {
+    // Note this useful idiom: importing names from outer (for mod tests) scope.
+    use super::*;
+    use crate::lox::expr::Literal as ExprLiteral;
+    use crate::lox::token::{Literal, Token, TokenType};
+
+    #[test]
+    fn literal_string() {
+        let expr = Expr::Literal(ExprLiteral {
+            token: Token::new(
+                TokenType::String,
+                "string".to_owned(),
+                Literal::String("string".into()),
+                1,
+            ),
+        });
+
+        let value = self::evaluate_node(expr);
+        assert_eq!(value, Value::String("string".into()));
+    }
+
+    #[test]
+    fn negation() {
+        let operator = Token::new(TokenType::Bang, "!".to_owned(), Literal::None, 1);
+
+        let left = Expr::Literal(super::Literal {
+            token: Token::new(TokenType::Number, "1".to_owned(), Literal::F64(1.0), 1),
+        });
+        let expr = Expr::Unary(Unary {
+            expr: Box::new(left),
+            operator,
+        });
+
+        let value = self::evaluate_node(expr);
+        assert_eq!(value, Value::Boolean(false));
+    }
+
+    #[test]
+    fn addition() {
+        let operator = Token::new(TokenType::Plus, "+".to_owned(), Literal::None, 1);
+
+        let left = Expr::Literal(super::Literal {
+            token: Token::new(TokenType::Number, "1".to_owned(), Literal::F64(1.0), 1),
+        });
+        let right = Expr::Literal(super::Literal {
+            token: Token::new(TokenType::Number, "2".to_owned(), Literal::F64(2.0), 1),
+        });
+        let expr = Expr::Binary(Binary {
+            left: Box::new(left),
+            right: Box::new(right),
+            operator,
+        });
+
+        let value = self::evaluate_node(expr);
+        assert_eq!(value, Value::F64(3.0));
+    }
+
+    #[test]
+    fn equality() {
+        let operator = Token::new(TokenType::EqualEqual, "==".to_owned(), Literal::None, 1);
+
+        let left = Expr::Literal(super::Literal {
+            token: Token::new(TokenType::Number, "1".to_owned(), Literal::F64(1.0), 1),
+        });
+        let right = Expr::Literal(super::Literal {
+            token: Token::new(TokenType::Number, "1".to_owned(), Literal::F64(1.0), 1),
+        });
+        let expr = Expr::Binary(Binary {
+            left: Box::new(left),
+            right: Box::new(right),
+            operator,
+        });
+
+        let value = self::evaluate_node(expr);
+        assert_eq!(value, Value::Boolean(true))
+    }
+
+    #[test]
+    fn comparison() {
+        let operator = Token::new(TokenType::Greater, ">".to_owned(), Literal::None, 1);
+
+        let left = Expr::Literal(super::Literal {
+            token: Token::new(TokenType::Number, "1".to_owned(), Literal::F64(1.0), 1),
+        });
+        let right = Expr::Literal(super::Literal {
+            token: Token::new(TokenType::Number, "2".to_owned(), Literal::F64(2.0), 1),
+        });
+        let expr = Expr::Binary(Binary {
+            left: Box::new(left),
+            right: Box::new(right),
+            operator,
+        });
+
+        let value = self::evaluate_node(expr);
+        assert_eq!(value, Value::Boolean(false))
+    }
+
+    #[test]
+    fn multiplication() {
+        let operator = Token::new(TokenType::Star, "*".to_owned(), Literal::None, 1);
+
+        let left = Expr::Literal(super::Literal {
+            token: Token::new(TokenType::Number, "3".to_owned(), Literal::F64(3.0), 1),
+        });
+        let right = Expr::Literal(super::Literal {
+            token: Token::new(TokenType::Number, "3".to_owned(), Literal::F64(3.0), 1),
+        });
+        let expr = Expr::Binary(Binary {
+            left: Box::new(left),
+            right: Box::new(right),
+            operator,
+        });
+
+        let value = self::evaluate_node(expr);
+        assert_eq!(value, Value::F64(9.0));
+    }
+}
