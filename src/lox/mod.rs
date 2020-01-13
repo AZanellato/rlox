@@ -3,6 +3,7 @@ pub mod expr;
 pub mod interpreter;
 pub mod parser;
 pub mod scanner;
+pub mod stmt;
 pub mod token;
 use std::fs;
 use std::process;
@@ -67,14 +68,22 @@ impl Lox {
         //     println!("{:?}", token);
         // }
         let mut parser = parser::Parser::new(tokens);
-        let maybe_expr = parser.parse();
-        let expr = match maybe_expr {
-            Some(expr) => expr,
-            None => expr::Expr::Literal(expr::Literal {
-                token: token::Token::empty_token(0),
-            }),
-        };
-        interpreter::evaluate_node(expr);
+        let statements = parser.parse();
+        // let expr = match maybe_expr {
+        //     Some(expr) => expr,
+        //     None => expr::Expr::Literal(expr::Literal {
+        //         token: token::Token::empty_token(0),
+        //     }),
+        // };
+        for node in statements {
+            match node {
+                stmt::Stmt::Expr(expr) => interpreter::evaluate_node(expr),
+                stmt::Stmt::Print(node) => {
+                    println!("{:?}", node);
+                    interpreter::Value::Nil
+                }
+            };
+        }
     }
 
     // fn error(&mut self, line: u32, message: String) -> () {

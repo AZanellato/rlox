@@ -1,4 +1,5 @@
 use super::expr::{Binary, Expr, Grouping, Literal, Unary};
+use super::stmt::Stmt;
 use super::token::{Token, TokenType};
 use std::iter::Peekable;
 use std::slice::Iter;
@@ -9,15 +10,55 @@ pub struct Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
-    pub fn new(borrowed_token_list: &'a Vec<Token>) -> Self {
+    pub fn new(borrowed_token_list: &'a [Token]) -> Self {
         Parser {
-            token_list: borrowed_token_list.into_iter().peekable(),
+            token_list: borrowed_token_list.iter().peekable(),
             error: false,
         }
     }
 
-    pub fn parse(&mut self) -> Option<Expr> {
-        self.expression()
+    pub fn parse(&mut self) -> Vec<Stmt> {
+        let mut statements = Vec::new();
+        while let Some(parsed_expression) = self.parse_next_statement() {
+            statements.push(parsed_expression);
+        }
+
+        statements
+    }
+
+    fn parse_next_statement(&mut self) -> Option<Stmt> {
+        let peek_token = self.token_list.peek()?;
+
+        match peek_token.t_type {
+            TokenType::Print => {
+                self.token_list.next();
+                self.print_statement()
+            }
+            _ => self.stmt_expr(),
+        }
+    }
+
+    fn print_statement(&mut self) -> Option<Stmt> {
+        let value = self.expression();
+        let next_token = self.token_list.peek();
+        if next_token == None || value == None {
+            return None;
+        }
+
+        if next_token?.t_type != TokenType::Semicolon {
+            panic!("Expect ; after an expression")
+        }
+
+        Some(Stmt::Print(value.unwrap()))
+    }
+
+    fn stmt_expr(&mut self) -> Option<Stmt> {
+        let expr = self.equality();
+        if expr == None {
+            None
+        } else {
+            Some(Stmt::Expr(expr.unwrap()))
+        }
     }
 
     fn expression(&mut self) -> Option<Expr> {

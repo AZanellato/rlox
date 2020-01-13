@@ -1,5 +1,10 @@
 use super::token::Token;
 
+pub enum Stmt {
+    Expr(Expr),
+    Print,
+}
+
 #[derive(PartialEq, Debug)]
 pub enum Expr {
     Grouping(Grouping),
