@@ -169,8 +169,8 @@ impl<'a> Scanner<'a> {
     fn scan_next_token(&mut self) {
         let ch = self.chars.next().unwrap_or(' ');
         if SINGLE_TOKEN_MAP.contains_key(&ch) {
-            let token = SINGLE_TOKEN_MAP.get(&ch).unwrap().clone();
-            self.add_token(token, &ch.to_string(), Literal::None)
+            let token = SINGLE_TOKEN_MAP.get(&ch).unwrap();
+            return self.add_token(token.clone(), &ch.to_string(), Literal::None);
         }
         match ch {
             '"' => self.string(),
@@ -225,8 +225,8 @@ impl<'a> Scanner<'a> {
                     self.add_token(TokenType::Slash, "/", Literal::None);
                 }
             }
-            _ => {
-                println!("Unexpected char at line: {}", self.line);
+            char => {
+                println!("Unexpected char {} at line: {}", char, self.line);
                 self.errors.push(self.line);
             }
         }

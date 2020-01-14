@@ -198,6 +198,7 @@ impl<'a> Parser<'a> {
                 println!("Expecting ')' after '(' and expression");
                 None
             }
+            TokenType::EOF => None,
             _ => {
                 self.error = true;
                 println!("Expecting an expression");
