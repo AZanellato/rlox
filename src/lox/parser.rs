@@ -46,7 +46,7 @@ impl<'a> Parser<'a> {
         }
 
         if next_token?.t_type != TokenType::Semicolon {
-            panic!("Expect ; after an expression")
+            println!("Expect ; after value")
         }
 
         Some(Stmt::Print(value.unwrap()))
@@ -54,6 +54,10 @@ impl<'a> Parser<'a> {
 
     fn stmt_expr(&mut self) -> Option<Stmt> {
         let expr = self.equality();
+        let next_token = self.token_list.peek();
+        if next_token?.t_type != TokenType::Semicolon {
+            println!("Expect ; after expression")
+        }
         if expr == None {
             None
         } else {
@@ -198,7 +202,7 @@ impl<'a> Parser<'a> {
                 println!("Expecting ')' after '(' and expression");
                 None
             }
-            TokenType::EOF => None,
+            TokenType::EOF | TokenType::Semicolon => None,
             _ => {
                 self.error = true;
                 println!("Expecting an expression");

@@ -1,8 +1,10 @@
 use super::expr::{Binary, Expr, Literal, Unary};
+use super::stmt::Stmt;
 use super::token;
+use derive_more::Display;
 use std::ops::{Add, Div, Mul, Neg, Not, Sub};
 
-#[derive(PartialEq, PartialOrd, Debug, Clone)]
+#[derive(PartialEq, PartialOrd, Debug, Display, Clone)]
 pub enum Value {
     String(String),
     F64(f64),
@@ -10,7 +12,20 @@ pub enum Value {
     Nil,
 }
 
-pub fn evaluate_node(expr: Expr) -> Value {
+pub fn evaluate_node(stmt: Stmt) -> Value {
+    match stmt {
+        Stmt::Expr(expr) => evaluate_expression(expr),
+        Stmt::Print(expr) => evaluate_print(expr),
+    }
+}
+
+fn evaluate_print(expr: Expr) -> Value {
+    let value = evaluate_expression(expr);
+    println!("{}", value);
+    Value::Nil
+}
+
+fn evaluate_expression(expr: Expr) -> Value {
     match expr {
         Expr::Literal(expr) => evalute_literal(expr),
         Expr::Unary(expr) => evaluate_unary(expr),
@@ -29,7 +44,7 @@ fn evalute_literal(expr: Literal) -> Value {
 }
 
 fn evaluate_unary(unary_expr: Unary) -> Value {
-    let value = evaluate_node(*unary_expr.expr);
+    let value = evaluate_expression(*unary_expr.expr);
 
     let new_value = match unary_expr.operator.t_type {
         token::TokenType::Minus => -value,
@@ -41,8 +56,8 @@ fn evaluate_unary(unary_expr: Unary) -> Value {
 }
 
 fn evaluate_binary(expr: Binary) -> Value {
-    let left_value = evaluate_node(*expr.left);
-    let right_value = evaluate_node(*expr.right);
+    let left_value = evaluate_expression(*expr.left);
+    let right_value = evaluate_expression(*expr.right);
 
     match expr.operator.t_type {
         token::TokenType::Plus => left_value + right_value,
@@ -152,7 +167,7 @@ mod tests {
             ),
         });
 
-        let value = self::evaluate_node(expr);
+        let value = self::evaluate_expression(expr);
         assert_eq!(value, Value::String("string".into()));
     }
 
@@ -168,7 +183,7 @@ mod tests {
             operator,
         });
 
-        let value = self::evaluate_node(expr);
+        let value = self::evaluate_expression(expr);
         assert_eq!(value, Value::Boolean(false));
     }
 
@@ -188,7 +203,7 @@ mod tests {
             operator,
         });
 
-        let value = self::evaluate_node(expr);
+        let value = self::evaluate_expression(expr);
         assert_eq!(value, Value::F64(3.0));
     }
 
@@ -208,7 +223,7 @@ mod tests {
             operator,
         });
 
-        let value = self::evaluate_node(expr);
+        let value = self::evaluate_expression(expr);
         assert_eq!(value, Value::Boolean(true))
     }
 
@@ -228,7 +243,7 @@ mod tests {
             operator,
         });
 
-        let value = self::evaluate_node(expr);
+        let value = self::evaluate_expression(expr);
         assert_eq!(value, Value::Boolean(false))
     }
 
@@ -248,7 +263,7 @@ mod tests {
             operator,
         });
 
-        let value = self::evaluate_node(expr);
+        let value = self::evaluate_expression(expr);
         assert_eq!(value, Value::F64(9.0));
     }
 }

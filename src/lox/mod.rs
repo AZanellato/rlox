@@ -7,6 +7,7 @@ pub mod stmt;
 pub mod token;
 use std::fs;
 use std::process;
+extern crate derive_more;
 extern crate phf;
 extern crate rustyline;
 
@@ -76,13 +77,7 @@ impl Lox {
         //     }),
         // };
         for node in statements {
-            match node {
-                stmt::Stmt::Expr(expr) => interpreter::evaluate_node(expr),
-                stmt::Stmt::Print(node) => {
-                    println!("{:?}", node);
-                    interpreter::Value::Nil
-                }
-            };
+            interpreter::evaluate_node(node);
         }
     }
 
