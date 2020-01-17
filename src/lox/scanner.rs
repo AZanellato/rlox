@@ -84,6 +84,7 @@ impl<'a> Scanner<'a> {
                 }
                 _ => {
                     println!("Unsupported char at line {}", self.line);
+                    self.chars.next();
                     self.errors.push(self.line);
                 }
             }

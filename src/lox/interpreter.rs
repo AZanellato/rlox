@@ -16,6 +16,11 @@ pub fn evaluate_node(stmt: Stmt) -> Value {
     match stmt {
         Stmt::Expr(expr) => evaluate_expression(expr),
         Stmt::Print(expr) => evaluate_print(expr),
+        Stmt::Declaration(expr) => {
+            println!("{:?}", expr);
+            println!("Not finished");
+            Value::Nil
+        }
     }
 }
 

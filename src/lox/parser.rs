@@ -1,6 +1,6 @@
 use super::expr::{Binary, Expr, Grouping, Literal, Unary};
-use super::stmt::Stmt;
-use super::token::{Token, TokenType};
+use super::stmt::{self, Stmt};
+use super::token::{self, Token, TokenType};
 use std::iter::Peekable;
 use std::slice::Iter;
 
@@ -34,8 +34,52 @@ impl<'a> Parser<'a> {
                 self.token_list.next();
                 self.print_statement()
             }
+            TokenType::Var => {
+                self.token_list.next();
+                self.variable_declaration()
+            }
             _ => self.stmt_expr(),
         }
+    }
+
+    fn variable_declaration(&mut self) -> Option<Stmt> {
+        let name = self.token_list.next()?;
+
+        let next_token = self.token_list.peek();
+        if next_token == None {
+            println!("Expect ; after value");
+            return None;
+        }
+
+        if next_token?.t_type != TokenType::Equal {
+            println!("Expect ; after value");
+            return None;
+        }
+
+        let next_token = self.token_list.next();
+
+        let expr_value = self.expression();
+
+        let value = if expr_value == None {
+            let token = Token::new(
+                TokenType::Nil,
+                "".to_owned(),
+                token::Literal::None,
+                next_token?.line,
+            );
+            let literal = Literal { token };
+
+            Expr::Literal(literal)
+        } else {
+            expr_value.unwrap()
+        };
+
+        let variable = stmt::Var {
+            value,
+            name: name.lexeme.to_owned(),
+        };
+
+        Some(Stmt::Declaration(variable))
     }
 
     fn print_statement(&mut self) -> Option<Stmt> {
