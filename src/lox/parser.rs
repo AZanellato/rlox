@@ -51,8 +51,14 @@ impl<'a> Parser<'a> {
             return None;
         }
 
-        if next_token?.t_type != TokenType::Equal {
-            println!("Expect ; after value");
+        let next_token = next_token.unwrap();
+
+        if next_token.t_type == TokenType::Semicolon {
+            return Some(self.empty_init(name));
+        }
+
+        if next_token.t_type != TokenType::Equal {
+            println!("Expected = or ; after var");
             return None;
         }
 
@@ -82,6 +88,23 @@ impl<'a> Parser<'a> {
         Some(Stmt::Declaration(variable))
     }
 
+    fn empty_init(&mut self, name: &Token) -> Stmt {
+        let token = Token::new(
+            TokenType::Nil,
+            "".to_owned(),
+            token::Literal::None,
+            name.line,
+        );
+        let literal = Literal { token };
+        let value = Expr::Literal(literal);
+
+        let variable = stmt::Var {
+            value,
+            name: name.lexeme.to_owned(),
+        };
+
+        Stmt::Declaration(variable)
+    }
     fn print_statement(&mut self) -> Option<Stmt> {
         let value = self.expression();
         let next_token = self.token_list.peek();
