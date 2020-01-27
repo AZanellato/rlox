@@ -77,13 +77,16 @@ impl<'a> Scanner<'a> {
     fn identifier(&mut self, first_digit: char) {
         let mut identifier = String::new();
         identifier.push(first_digit);
-        while self.chars.peek() != Some(&' ') && self.chars.peek() != None {
+        while self.chars.peek() != Some(&' ')
+            && self.chars.peek() != Some(&';')
+            && self.chars.peek() != None
+        {
             match self.chars.peek().unwrap() {
                 'a'..='z' | 'A'..='Z' | '_' | '-' => {
                     identifier.push(self.chars.next().unwrap());
                 }
-                _ => {
-                    println!("Unsupported char at line {}", self.line);
+                ch => {
+                    println!("Unsupported char {} at line {}", ch, self.line);
                     self.chars.next();
                     self.errors.push(self.line);
                 }
@@ -227,7 +230,7 @@ impl<'a> Scanner<'a> {
                 }
             }
             char => {
-                println!("Unexpected char {} at line: {}", char, self.line);
+                println!("Unexpected char {:?} at line: {}", char, self.line);
                 self.errors.push(self.line);
             }
         }
