@@ -2,6 +2,7 @@ use super::expr::{Binary, Expr, Literal, Unary};
 use super::stmt::Stmt;
 use super::token;
 use derive_more::Display;
+use std::collections::HashMap;
 use std::ops::{Add, Div, Mul, Neg, Not, Sub};
 
 #[derive(PartialEq, PartialOrd, Debug, Display, Clone)]
@@ -10,6 +11,37 @@ pub enum Value {
     F64(f64),
     Boolean(bool),
     Nil,
+}
+
+struct Environment {
+    env_values: HashMap<String, Value>,
+}
+
+impl Environment {
+    fn new() -> Self {
+        Self {
+            env_values: HashMap::new(),
+        }
+    }
+
+    fn define(&mut self, name: String, value: Value) {
+        self.env_values.insert(name, value);
+    }
+
+    fn get(&mut self, name: String) -> Option<&Value> {
+        self.env_values.get(&name)
+    }
+}
+
+pub struct Interpreter {
+    env: Environment,
+}
+
+impl Interpreter {
+    pub fn new() -> Self {
+        let env = Environment::new();
+        Self { env }
+    }
 }
 
 pub fn evaluate_node(stmt: Stmt) -> Value {
