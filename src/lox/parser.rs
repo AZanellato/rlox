@@ -296,15 +296,21 @@ mod tests {
             1,
         );
 
+        let semicolon = Token::new(TokenType::Semicolon, ";".to_owned(), Literal::None, 1);
+
         let expected_expr = Expr::Literal(ExprLiteral {
             token: string_token.clone(),
         });
 
-        let tokens = vec![string_token];
+        let tokens = vec![string_token, semicolon];
 
         let mut parser = Parser::new(&tokens);
-        let expr = parser.parse();
-        assert_eq!(expr, Some(expected_expr));
+        let mut stmt = parser.parse();
+        if let Some(Stmt::Expr(expr)) = stmt.pop() {
+            assert_eq!(expr, expected_expr);
+        } else {
+            unreachable!()
+        }
     }
 
     #[test]
@@ -320,11 +326,16 @@ mod tests {
             operator: operator.clone(),
         });
 
-        let tokens = vec![operator, number];
+        let semicolon = Token::new(TokenType::Semicolon, ";".to_owned(), Literal::None, 1);
+        let tokens = vec![operator, number, semicolon];
 
         let mut parser = Parser::new(&tokens);
-        let expr = parser.parse();
-        assert_eq!(expr, Some(expected_expr));
+        let mut stmt = parser.parse();
+        if let Some(Stmt::Expr(expr)) = stmt.pop() {
+            assert_eq!(expr, expected_expr);
+        } else {
+            unreachable!()
+        }
     }
 
     #[test]
@@ -345,11 +356,16 @@ mod tests {
             operator: operator.clone(),
         });
 
-        let tokens = vec![first_number, operator, second_number];
+        let semicolon = Token::new(TokenType::Semicolon, ";".to_owned(), Literal::None, 1);
+        let tokens = vec![first_number, operator, second_number, semicolon];
 
         let mut parser = Parser::new(&tokens);
-        let expr = parser.parse();
-        assert_eq!(expr, Some(expected_expr));
+        let mut stmt = parser.parse();
+        if let Some(Stmt::Expr(expr)) = stmt.pop() {
+            assert_eq!(expr, expected_expr);
+        } else {
+            unreachable!()
+        }
     }
 
     #[test]
@@ -370,11 +386,16 @@ mod tests {
             operator: operator.clone(),
         });
 
-        let tokens = vec![first_number, operator, second_number];
+        let semicolon = Token::new(TokenType::Semicolon, ";".to_owned(), Literal::None, 1);
+        let tokens = vec![first_number, operator, second_number, semicolon];
 
         let mut parser = Parser::new(&tokens);
-        let expr = parser.parse();
-        assert_eq!(expr, Some(expected_expr));
+        let mut stmt = parser.parse();
+        if let Some(Stmt::Expr(expr)) = stmt.pop() {
+            assert_eq!(expr, expected_expr);
+        } else {
+            unreachable!()
+        }
     }
 
     #[test]
@@ -382,6 +403,7 @@ mod tests {
         let first_number = Token::new(TokenType::Number, "1".to_owned(), Literal::F64(1.0), 1);
         let second_number = Token::new(TokenType::Number, "2".to_owned(), Literal::F64(2.0), 1);
         let operator = Token::new(TokenType::Greater, ">".to_owned(), Literal::None, 1);
+        let semicolon = Token::new(TokenType::Semicolon, ";".to_owned(), Literal::None, 1);
 
         let left = Expr::Literal(super::Literal {
             token: first_number.clone(),
@@ -395,11 +417,15 @@ mod tests {
             operator: operator.clone(),
         });
 
-        let tokens = vec![first_number, operator, second_number];
+        let tokens = vec![first_number, operator, second_number, semicolon];
 
         let mut parser = Parser::new(&tokens);
-        let expr = parser.parse();
-        assert_eq!(expr, Some(expected_expr));
+        let mut stmt = parser.parse();
+        if let Some(Stmt::Expr(expr)) = stmt.pop() {
+            assert_eq!(expr, expected_expr);
+        } else {
+            unreachable!()
+        }
     }
 
     #[test]
@@ -407,6 +433,7 @@ mod tests {
         let first_number = Token::new(TokenType::Number, "1".to_owned(), Literal::F64(1.0), 1);
         let operator = Token::new(TokenType::Star, "*".to_owned(), Literal::None, 1);
         let second_number = Token::new(TokenType::Number, "1".to_owned(), Literal::F64(1.0), 1);
+        let semicolon = Token::new(TokenType::Semicolon, ";".to_owned(), Literal::None, 1);
 
         let left = Expr::Literal(super::Literal {
             token: first_number.clone(),
@@ -420,10 +447,14 @@ mod tests {
             operator: operator.clone(),
         });
 
-        let tokens = vec![first_number, operator, second_number];
+        let tokens = vec![first_number, operator, second_number, semicolon];
 
         let mut parser = Parser::new(&tokens);
-        let expr = parser.parse();
-        assert_eq!(expr, Some(expected_expr));
+        let mut stmt = parser.parse();
+        if let Some(Stmt::Expr(expr)) = stmt.pop() {
+            assert_eq!(expr, expected_expr);
+        } else {
+            unreachable!()
+        }
     }
 }
