@@ -11,6 +11,7 @@ extern crate derive_more;
 extern crate phf;
 extern crate rustyline;
 
+use interpreter::Interpreter;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
@@ -76,8 +77,9 @@ impl Lox {
         //         token: token::Token::empty_token(0),
         //     }),
         // };
+        let mut interpreter = Interpreter::new();
         for node in statements {
-            interpreter::evaluate_node(node);
+            interpreter.evaluate_node(node);
         }
     }
 
