@@ -1,5 +1,5 @@
 use super::expr::{Binary, Expr, Literal, Unary};
-use super::stmt::Stmt;
+use super::stmt::{Stmt, Var};
 use super::token;
 use derive_more::Display;
 use std::collections::HashMap;
@@ -13,6 +13,7 @@ pub enum Value {
     Nil,
 }
 
+#[derive(Debug)]
 struct Environment {
     env_values: HashMap<String, Value>,
 }
@@ -33,6 +34,7 @@ impl Environment {
     }
 }
 
+#[derive(Debug)]
 pub struct Interpreter {
     env: Environment,
 }
@@ -47,12 +49,15 @@ impl Interpreter {
         match stmt {
             Stmt::Expr(expr) => self.evaluate_expression(expr),
             Stmt::Print(expr) => self.evaluate_print(expr),
-            Stmt::Declaration(expr) => {
-                println!("{:?}", expr);
-                println!("Not finished");
-                Value::Nil
-            }
+            Stmt::Declaration(var) => self.evaluate_variable(var),
         }
+    }
+
+    fn evaluate_variable(&mut self, var: Var) -> Value {
+        let value = self.evaluate_expression(var.value);
+        let name = var.name.clone();
+        self.env.define(var.name, value);
+        self.env.get(name).unwrap().clone()
     }
 
     fn evaluate_print(&mut self, expr: Expr) -> Value {
