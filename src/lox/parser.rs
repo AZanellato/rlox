@@ -1,4 +1,4 @@
-use super::expr::{Binary, Expr, Grouping, Literal, Unary};
+use super::expr::{Assignment, Binary, Expr, Grouping, Literal, Unary, Var};
 use super::stmt::{self, Stmt};
 use super::token::{self, Token, TokenType};
 use std::iter::Peekable;
@@ -133,7 +133,42 @@ impl<'a> Parser<'a> {
     }
 
     fn expression(&mut self) -> Option<Expr> {
-        self.equality()
+        self.assignment()
+    }
+
+    fn assignment(&mut self) -> Option<Expr> {
+        let possible_expr = self.equality();
+
+        println!("assignment");
+        if self.token_list.peek().is_none() {
+            return possible_expr;
+        }
+
+        let next_token = self.token_list.next().unwrap();
+
+        if let TokenType::Equal = next_token.t_type {
+            if possible_expr == None {
+                panic!("Invalid assignment");
+            }
+
+            let value = self.assignment();
+            if value == None {
+                panic!("Invalid value on the right hand side");
+            }
+
+            let value = Box::new(value.unwrap());
+            let expr = possible_expr.unwrap();
+
+            if let Expr::Var(var) = expr {
+                let name = var.name;
+                let assignment = Expr::Assignment(Assignment { name, value });
+                return Some(assignment);
+            }
+
+            panic!("Invalid assignment")
+        } else {
+            possible_expr
+        }
     }
 
     fn equality(&mut self) -> Option<Expr> {
@@ -249,13 +284,17 @@ impl<'a> Parser<'a> {
         let peek = self.token_list.peek()?;
 
         match peek.t_type {
+            TokenType::Identifier => {
+                let name = self.token_list.next()?.clone();
+                Some(Expr::Var(Var { name }))
+            }
             TokenType::Number
             | TokenType::String
             | TokenType::False
             | TokenType::True
             | TokenType::Nil => {
-                let next = self.token_list.next()?.clone();
-                Some(Expr::Literal(Literal { token: next }))
+                let token = self.token_list.next()?.clone();
+                Some(Expr::Literal(Literal { token }))
             }
             TokenType::LeftParen => {
                 self.token_list.next();

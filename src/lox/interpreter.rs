@@ -1,4 +1,5 @@
-use super::expr::{Binary, Expr, Literal, Unary};
+use super::expr::Var as Var_expr;
+use super::expr::{Assignment, Binary, Expr, Literal, Unary};
 use super::stmt::{Stmt, Var};
 use super::token;
 use derive_more::Display;
@@ -49,11 +50,11 @@ impl Interpreter {
         match stmt {
             Stmt::Expr(expr) => self.evaluate_expression(expr),
             Stmt::Print(expr) => self.evaluate_print(expr),
-            Stmt::Declaration(var) => self.evaluate_variable(var),
+            Stmt::Declaration(var) => self.evaluate_declaration(var),
         }
     }
 
-    fn evaluate_variable(&mut self, var: Var) -> Value {
+    fn evaluate_declaration(&mut self, var: Var) -> Value {
         let value = self.evaluate_expression(var.value);
         let name = var.name.clone();
         self.env.define(var.name, value);
@@ -71,8 +72,20 @@ impl Interpreter {
             Expr::Literal(expr) => self.evalute_literal(expr),
             Expr::Unary(expr) => self.evaluate_unary(expr),
             Expr::Binary(expr) => self.evaluate_binary(expr),
-            _ => panic!("Not implemented yet"),
+            Expr::Var(expr) => self.evaluate_variable(expr),
+            Expr::Assignment(expr) => self.evaluate_assignment(expr),
+            Expr::Grouping(_) => panic!("Grouping not implemented"),
         }
+    }
+
+    fn evaluate_assignment(&mut self, expr: Assignment) -> Value {
+        Value::Nil
+    }
+
+    fn evaluate_variable(&mut self, expr: Var_expr) -> Value {
+        let identifier = expr.name;
+        let name = identifier.lexeme;
+        self.env.get(name).unwrap().clone()
     }
 
     fn evalute_literal(&mut self, expr: Literal) -> Value {

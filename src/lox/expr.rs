@@ -5,6 +5,7 @@ pub enum Expr {
     Grouping(Grouping),
     Binary(Binary),
     Literal(Literal),
+    Var(Var),
     Assignment(Assignment),
     Unary(Unary),
 }
@@ -30,6 +31,11 @@ pub struct Unary {
 #[derive(PartialEq, Debug)]
 pub struct Literal {
     pub token: Token,
+}
+
+#[derive(PartialEq, Debug)]
+pub struct Var {
+    pub name: Token,
 }
 
 #[derive(PartialEq, Debug)]
