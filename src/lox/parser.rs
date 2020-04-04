@@ -120,7 +120,7 @@ impl<'a> Parser<'a> {
     }
 
     fn stmt_expr(&mut self) -> Option<Stmt> {
-        let expr = self.equality();
+        let expr = self.assignment();
         let next_token = self.token_list.peek();
         if next_token?.t_type != TokenType::Semicolon {
             println!("Expect ; after expression")
@@ -139,7 +139,6 @@ impl<'a> Parser<'a> {
     fn assignment(&mut self) -> Option<Expr> {
         let possible_expr = self.equality();
 
-        println!("assignment");
         if self.token_list.peek().is_none() {
             return possible_expr;
         }

@@ -26,12 +26,13 @@ impl Environment {
         }
     }
 
-    fn define(&mut self, name: String, value: Value) {
-        self.env_values.insert(name, value);
+    fn define(&mut self, name: &str, value: Value) {
+        let new_name = name.into();
+        self.env_values.insert(new_name, value);
     }
 
-    fn get(&mut self, name: String) -> Option<&Value> {
-        self.env_values.get(&name)
+    fn get(&mut self, name: &str) -> Option<&Value> {
+        self.env_values.get(name)
     }
 }
 
@@ -56,9 +57,8 @@ impl Interpreter {
 
     fn evaluate_declaration(&mut self, var: Var) -> Value {
         let value = self.evaluate_expression(var.value);
-        let name = var.name.clone();
-        self.env.define(var.name, value);
-        self.env.get(name).unwrap().clone()
+        self.env.define(&var.name, value);
+        self.env.get(&var.name).unwrap().clone()
     }
 
     fn evaluate_print(&mut self, expr: Expr) -> Value {
@@ -78,14 +78,18 @@ impl Interpreter {
         }
     }
 
-    fn evaluate_assignment(&mut self, expr: Assignment) -> Value {
-        Value::Nil
+    fn evaluate_assignment(&mut self, assignment_expr: Assignment) -> Value {
+        let expr = assignment_expr.value;
+        let value = self.evaluate_expression(*expr);
+        let name = assignment_expr.name.lexeme;
+        self.env.define(&name, value);
+        self.env.get(&name).unwrap().clone()
     }
 
     fn evaluate_variable(&mut self, expr: Var_expr) -> Value {
         let identifier = expr.name;
         let name = identifier.lexeme;
-        self.env.get(name).unwrap().clone()
+        self.env.get(&name).unwrap().clone()
     }
 
     fn evalute_literal(&mut self, expr: Literal) -> Value {
@@ -105,7 +109,6 @@ impl Interpreter {
             token::TokenType::Bang => !value,
             _ => Value::Nil,
         };
-        println!("{:?}", new_value);
         new_value
     }
 
