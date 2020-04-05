@@ -17,12 +17,21 @@ pub enum Value {
 #[derive(Debug)]
 struct Environment {
     env_values: HashMap<String, Value>,
+    enclosing: Option<Box<Environment>>,
 }
 
 impl Environment {
     fn new() -> Self {
         Self {
             env_values: HashMap::new(),
+            enclosing: None,
+        }
+    }
+
+    fn enclosed(enclosed: Box<Environment>) -> Self {
+        Self {
+            env_values: HashMap::new(),
+            enclosing: Some(enclosed),
         }
     }
 
@@ -31,8 +40,30 @@ impl Environment {
         self.env_values.insert(new_name, value);
     }
 
-    fn get(&mut self, name: &str) -> Option<&Value> {
-        self.env_values.get(name)
+    fn assign(&mut self, name: &str, value: Value) {
+        match self.get(name) {
+            Some(_) => self.define(name, value),
+            None => self.define_enclosed(name, value),
+        }
+    }
+
+    fn define_enclosed(&mut self, name: &str, value: Value) {
+        match &mut self.enclosing {
+            Some(boxed_env) => boxed_env.assign(name, value),
+            None => println!("Variable not declared with name: {}", name),
+        }
+    }
+
+    fn get(&self, name: &str) -> Option<&Value> {
+        let var_in_context = self.env_values.get(name);
+        if let Some(var) = var_in_context {
+            Some(var)
+        } else {
+            match &self.enclosing {
+                None => None,
+                Some(boxed_env) => boxed_env.get(name),
+            }
+        }
     }
 }
 
@@ -82,7 +113,7 @@ impl Interpreter {
         let expr = assignment_expr.value;
         let value = self.evaluate_expression(*expr);
         let name = assignment_expr.name.lexeme;
-        self.env.define(&name, value);
+        self.env.assign(&name, value);
         self.env.get(&name).unwrap().clone()
     }
 
@@ -104,12 +135,11 @@ impl Interpreter {
     fn evaluate_unary(&mut self, unary_expr: Unary) -> Value {
         let value = self.evaluate_expression(*unary_expr.expr);
 
-        let new_value = match unary_expr.operator.t_type {
+        match unary_expr.operator.t_type {
             token::TokenType::Minus => -value,
             token::TokenType::Bang => !value,
             _ => Value::Nil,
-        };
-        new_value
+        }
     }
 
     fn evaluate_binary(&mut self, expr: Binary) -> Value {
