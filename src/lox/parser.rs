@@ -1,5 +1,5 @@
 use super::expr::{Assignment, Binary, Expr, Grouping, Literal, Unary, Var};
-use super::stmt::{self, Stmt};
+use super::stmt::{self, Block, Stmt};
 use super::token::{self, Token, TokenType};
 use std::iter::Peekable;
 use std::slice::Iter;
@@ -38,8 +38,26 @@ impl<'a> Parser<'a> {
                 self.token_list.next();
                 self.variable_declaration()
             }
+            TokenType::LeftBrace => {
+                self.token_list.next();
+                self.block_statement()
+            }
             _ => self.stmt_expr(),
         }
+    }
+
+    fn print_statement(&mut self) -> Option<Stmt> {
+        let value = self.expression();
+        let next_token = self.token_list.peek();
+        if next_token == None || value == None {
+            return None;
+        }
+
+        if next_token?.t_type != TokenType::Semicolon {
+            println!("Expect ; after value")
+        }
+
+        Some(Stmt::Print(value.unwrap()))
     }
 
     fn variable_declaration(&mut self) -> Option<Stmt> {
@@ -105,18 +123,26 @@ impl<'a> Parser<'a> {
 
         Stmt::Declaration(variable)
     }
-    fn print_statement(&mut self) -> Option<Stmt> {
-        let value = self.expression();
-        let next_token = self.token_list.peek();
-        if next_token == None || value == None {
-            return None;
+
+    fn block_statement(&mut self) -> Option<Stmt> {
+        let mut statements = Vec::new();
+
+        while let Some(next_token) = self.token_list.peek() {
+            if next_token.t_type == TokenType::RightBrace {
+                break;
+            }
+
+            let next_stmt = self.parse_next_statement()?;
+            statements.push(next_stmt);
         }
 
-        if next_token?.t_type != TokenType::Semicolon {
-            println!("Expect ; after value")
+        if self.token_list.peek() == None {
+            panic!("Missing closing bracket");
         }
 
-        Some(Stmt::Print(value.unwrap()))
+        Some(Stmt::Block(Block {
+            stmt_vec: statements,
+        }))
     }
 
     fn stmt_expr(&mut self) -> Option<Stmt> {
