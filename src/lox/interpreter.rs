@@ -1,6 +1,6 @@
 use super::expr::Var as Var_expr;
 use super::expr::{Assignment, Binary, Expr, Literal, Unary};
-use super::stmt::{Stmt, Var};
+use super::stmt::{Block, Stmt, Var};
 use super::token;
 use derive_more::Display;
 use std::collections::HashMap;
@@ -83,19 +83,8 @@ impl Interpreter {
             Stmt::Expr(expr) => self.evaluate_expression(expr),
             Stmt::Print(expr) => self.evaluate_print(expr),
             Stmt::Declaration(var) => self.evaluate_declaration(var),
+            Stmt::Block(block) => panic!("oi"),
         }
-    }
-
-    fn evaluate_declaration(&mut self, var: Var) -> Value {
-        let value = self.evaluate_expression(var.value);
-        self.env.define(&var.name, value);
-        self.env.get(&var.name).unwrap().clone()
-    }
-
-    fn evaluate_print(&mut self, expr: Expr) -> Value {
-        let value = self.evaluate_expression(expr);
-        println!("{}", value);
-        Value::Nil
     }
 
     fn evaluate_expression(&mut self, expr: Expr) -> Value {
@@ -109,6 +98,21 @@ impl Interpreter {
         }
     }
 
+    fn evaluate_print(&mut self, expr: Expr) -> Value {
+        let value = self.evaluate_expression(expr);
+        println!("{}", value);
+        Value::Nil
+    }
+
+    fn evaluate_declaration(&mut self, var: Var) -> Value {
+        let value = self.evaluate_expression(var.value);
+        self.env.define(&var.name, value);
+        self.env.get(&var.name).unwrap().clone()
+    }
+
+    fn evaluate_block(&mut self, block: Block) -> Value {
+        Value::Nil
+    }
     fn evaluate_assignment(&mut self, assignment_expr: Assignment) -> Value {
         let expr = assignment_expr.value;
         let value = self.evaluate_expression(*expr);
