@@ -1,6 +1,6 @@
-use super::expr::{Binary, Expr, Grouping, Literal, Unary};
-use super::stmt::Stmt;
-use super::token::{Token, TokenType};
+use super::expr::{Assignment, Binary, Expr, Grouping, Literal, Unary, Var};
+use super::stmt::{self, Block, Stmt};
+use super::token::{self, Token, TokenType};
 use std::iter::Peekable;
 use std::slice::Iter;
 
@@ -34,6 +34,14 @@ impl<'a> Parser<'a> {
                 self.token_list.next();
                 self.print_statement()
             }
+            TokenType::Var => {
+                self.token_list.next();
+                self.variable_declaration()
+            }
+            TokenType::LeftBrace => {
+                self.token_list.next();
+                self.block_statement()
+            }
             _ => self.stmt_expr(),
         }
     }
@@ -52,8 +60,93 @@ impl<'a> Parser<'a> {
         Some(Stmt::Print(value.unwrap()))
     }
 
+    fn variable_declaration(&mut self) -> Option<Stmt> {
+        let name = self.token_list.next()?;
+
+        let next_token = self.token_list.peek();
+        if next_token == None {
+            println!("Expect ; after value");
+            return None;
+        }
+
+        let next_token = next_token.unwrap();
+
+        if next_token.t_type == TokenType::Semicolon {
+            return Some(self.empty_init(name));
+        }
+
+        if next_token.t_type != TokenType::Equal {
+            println!("Expected = or ; after var");
+            return None;
+        }
+
+        let next_token = self.token_list.next();
+
+        let expr_value = self.expression();
+
+        let value = if expr_value == None {
+            let token = Token::new(
+                TokenType::Nil,
+                "".to_owned(),
+                token::Literal::None,
+                next_token?.line,
+            );
+            let literal = Literal { token };
+
+            Expr::Literal(literal)
+        } else {
+            expr_value.unwrap()
+        };
+
+        let variable = stmt::Var {
+            value,
+            name: name.lexeme.to_owned(),
+        };
+
+        Some(Stmt::Declaration(variable))
+    }
+
+    fn empty_init(&mut self, name: &Token) -> Stmt {
+        let token = Token::new(
+            TokenType::Nil,
+            "".to_owned(),
+            token::Literal::None,
+            name.line,
+        );
+        let literal = Literal { token };
+        let value = Expr::Literal(literal);
+
+        let variable = stmt::Var {
+            value,
+            name: name.lexeme.to_owned(),
+        };
+
+        Stmt::Declaration(variable)
+    }
+
+    fn block_statement(&mut self) -> Option<Stmt> {
+        let mut statements = Vec::new();
+
+        while let Some(next_token) = self.token_list.peek() {
+            if next_token.t_type == TokenType::RightBrace {
+                break;
+            }
+
+            let next_stmt = self.parse_next_statement()?;
+            statements.push(next_stmt);
+        }
+
+        if self.token_list.peek() == None {
+            panic!("Missing closing bracket");
+        }
+
+        Some(Stmt::Block(Block {
+            stmt_vec: statements,
+        }))
+    }
+
     fn stmt_expr(&mut self) -> Option<Stmt> {
-        let expr = self.equality();
+        let expr = self.assignment();
         let next_token = self.token_list.peek();
         if next_token?.t_type != TokenType::Semicolon {
             println!("Expect ; after expression")
@@ -66,7 +159,41 @@ impl<'a> Parser<'a> {
     }
 
     fn expression(&mut self) -> Option<Expr> {
-        self.equality()
+        self.assignment()
+    }
+
+    fn assignment(&mut self) -> Option<Expr> {
+        let possible_expr = self.equality();
+
+        if self.token_list.peek().is_none() {
+            return possible_expr;
+        }
+
+        let next_token = self.token_list.next().unwrap();
+
+        if let TokenType::Equal = next_token.t_type {
+            if possible_expr == None {
+                panic!("Invalid assignment");
+            }
+
+            let value = self.assignment();
+            if value == None {
+                panic!("Invalid value on the right hand side");
+            }
+
+            let value = Box::new(value.unwrap());
+            let expr = possible_expr.unwrap();
+
+            if let Expr::Var(var) = expr {
+                let name = var.name;
+                let assignment = Expr::Assignment(Assignment { name, value });
+                return Some(assignment);
+            }
+
+            panic!("Invalid assignment")
+        } else {
+            possible_expr
+        }
     }
 
     fn equality(&mut self) -> Option<Expr> {
@@ -182,13 +309,17 @@ impl<'a> Parser<'a> {
         let peek = self.token_list.peek()?;
 
         match peek.t_type {
+            TokenType::Identifier => {
+                let name = self.token_list.next()?.clone();
+                Some(Expr::Var(Var { name }))
+            }
             TokenType::Number
             | TokenType::String
             | TokenType::False
             | TokenType::True
             | TokenType::Nil => {
-                let next = self.token_list.next()?.clone();
-                Some(Expr::Literal(Literal { token: next }))
+                let token = self.token_list.next()?.clone();
+                Some(Expr::Literal(Literal { token }))
             }
             TokenType::LeftParen => {
                 self.token_list.next();
@@ -229,15 +360,21 @@ mod tests {
             1,
         );
 
+        let semicolon = Token::new(TokenType::Semicolon, ";".to_owned(), Literal::None, 1);
+
         let expected_expr = Expr::Literal(ExprLiteral {
             token: string_token.clone(),
         });
 
-        let tokens = vec![string_token];
+        let tokens = vec![string_token, semicolon];
 
         let mut parser = Parser::new(&tokens);
-        let expr = parser.parse();
-        assert_eq!(expr, Some(expected_expr));
+        let mut stmt = parser.parse();
+        if let Some(Stmt::Expr(expr)) = stmt.pop() {
+            assert_eq!(expr, expected_expr);
+        } else {
+            unreachable!()
+        }
     }
 
     #[test]
@@ -253,11 +390,16 @@ mod tests {
             operator: operator.clone(),
         });
 
-        let tokens = vec![operator, number];
+        let semicolon = Token::new(TokenType::Semicolon, ";".to_owned(), Literal::None, 1);
+        let tokens = vec![operator, number, semicolon];
 
         let mut parser = Parser::new(&tokens);
-        let expr = parser.parse();
-        assert_eq!(expr, Some(expected_expr));
+        let mut stmt = parser.parse();
+        if let Some(Stmt::Expr(expr)) = stmt.pop() {
+            assert_eq!(expr, expected_expr);
+        } else {
+            unreachable!()
+        }
     }
 
     #[test]
@@ -278,11 +420,16 @@ mod tests {
             operator: operator.clone(),
         });
 
-        let tokens = vec![first_number, operator, second_number];
+        let semicolon = Token::new(TokenType::Semicolon, ";".to_owned(), Literal::None, 1);
+        let tokens = vec![first_number, operator, second_number, semicolon];
 
         let mut parser = Parser::new(&tokens);
-        let expr = parser.parse();
-        assert_eq!(expr, Some(expected_expr));
+        let mut stmt = parser.parse();
+        if let Some(Stmt::Expr(expr)) = stmt.pop() {
+            assert_eq!(expr, expected_expr);
+        } else {
+            unreachable!()
+        }
     }
 
     #[test]
@@ -303,11 +450,16 @@ mod tests {
             operator: operator.clone(),
         });
 
-        let tokens = vec![first_number, operator, second_number];
+        let semicolon = Token::new(TokenType::Semicolon, ";".to_owned(), Literal::None, 1);
+        let tokens = vec![first_number, operator, second_number, semicolon];
 
         let mut parser = Parser::new(&tokens);
-        let expr = parser.parse();
-        assert_eq!(expr, Some(expected_expr));
+        let mut stmt = parser.parse();
+        if let Some(Stmt::Expr(expr)) = stmt.pop() {
+            assert_eq!(expr, expected_expr);
+        } else {
+            unreachable!()
+        }
     }
 
     #[test]
@@ -315,6 +467,7 @@ mod tests {
         let first_number = Token::new(TokenType::Number, "1".to_owned(), Literal::F64(1.0), 1);
         let second_number = Token::new(TokenType::Number, "2".to_owned(), Literal::F64(2.0), 1);
         let operator = Token::new(TokenType::Greater, ">".to_owned(), Literal::None, 1);
+        let semicolon = Token::new(TokenType::Semicolon, ";".to_owned(), Literal::None, 1);
 
         let left = Expr::Literal(super::Literal {
             token: first_number.clone(),
@@ -328,11 +481,15 @@ mod tests {
             operator: operator.clone(),
         });
 
-        let tokens = vec![first_number, operator, second_number];
+        let tokens = vec![first_number, operator, second_number, semicolon];
 
         let mut parser = Parser::new(&tokens);
-        let expr = parser.parse();
-        assert_eq!(expr, Some(expected_expr));
+        let mut stmt = parser.parse();
+        if let Some(Stmt::Expr(expr)) = stmt.pop() {
+            assert_eq!(expr, expected_expr);
+        } else {
+            unreachable!()
+        }
     }
 
     #[test]
@@ -340,6 +497,7 @@ mod tests {
         let first_number = Token::new(TokenType::Number, "1".to_owned(), Literal::F64(1.0), 1);
         let operator = Token::new(TokenType::Star, "*".to_owned(), Literal::None, 1);
         let second_number = Token::new(TokenType::Number, "1".to_owned(), Literal::F64(1.0), 1);
+        let semicolon = Token::new(TokenType::Semicolon, ";".to_owned(), Literal::None, 1);
 
         let left = Expr::Literal(super::Literal {
             token: first_number.clone(),
@@ -353,10 +511,14 @@ mod tests {
             operator: operator.clone(),
         });
 
-        let tokens = vec![first_number, operator, second_number];
+        let tokens = vec![first_number, operator, second_number, semicolon];
 
         let mut parser = Parser::new(&tokens);
-        let expr = parser.parse();
-        assert_eq!(expr, Some(expected_expr));
+        let mut stmt = parser.parse();
+        if let Some(Stmt::Expr(expr)) = stmt.pop() {
+            assert_eq!(expr, expected_expr);
+        } else {
+            unreachable!()
+        }
     }
 }

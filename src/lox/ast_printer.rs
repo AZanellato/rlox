@@ -7,6 +7,7 @@ pub fn print_node(expr: Expr) {
         Expr::Grouping(expr) => print_grouping(expr),
         Expr::Binary(expr) => print_binary(expr),
         Expr::Unary(expr) => print_unary(expr),
+        _ => println!("Variable or assignment"),
     }
 
     io::stdout().flush().unwrap();

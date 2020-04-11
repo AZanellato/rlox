@@ -11,6 +11,7 @@ extern crate derive_more;
 extern crate phf;
 extern crate rustyline;
 
+use interpreter::Interpreter;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
@@ -29,13 +30,14 @@ impl Lox {
     }
 
     pub fn prompt(&mut self) -> () {
+        let mut interpreter = Interpreter::new();
         let mut rl = Editor::<()>::new();
         loop {
             let readline = rl.readline(">> ");
             match readline {
                 Ok(line) => {
                     rl.add_history_entry(line.as_str());
-                    self.run(line);
+                    self.run(&mut interpreter, line);
                     self.had_errors = false;
                 }
                 Err(ReadlineError::Interrupted) => {
@@ -56,28 +58,20 @@ impl Lox {
 
     pub fn runfile(&self, path: std::path::PathBuf) -> () {
         let source = fs::read_to_string(path).unwrap_or("".to_string());
-        self.run(source);
+        let mut interpreter = Interpreter::new();
+        self.run(&mut interpreter, source);
         if self.had_errors {
             process::exit(1);
         }
     }
 
-    fn run(&self, source: String) {
+    fn run(&self, interpreter: &mut Interpreter, source: String) {
         let mut scanner = scanner::Scanner::new(&source);
         let tokens = scanner.scan_tokens();
-        // for token in tokens {
-        //     println!("{:?}", token);
-        // }
         let mut parser = parser::Parser::new(tokens);
         let statements = parser.parse();
-        // let expr = match maybe_expr {
-        //     Some(expr) => expr,
-        //     None => expr::Expr::Literal(expr::Literal {
-        //         token: token::Token::empty_token(0),
-        //     }),
-        // };
         for node in statements {
-            interpreter::evaluate_node(node);
+            interpreter.evaluate_node(node);
         }
     }
 
