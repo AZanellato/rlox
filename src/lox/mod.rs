@@ -73,7 +73,6 @@ impl Lox {
         for node in statements {
             interpreter.evaluate_node(node);
         }
-        println!("{:#?}", interpreter);
     }
 
     // fn error(&mut self, line: u32, message: String) -> () {

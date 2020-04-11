@@ -14,24 +14,24 @@ pub enum Value {
     Nil,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 struct Environment {
     env_values: HashMap<String, Value>,
-    enclosing: Option<Box<Environment>>,
+    enclosed: Option<Box<Environment>>,
 }
 
 impl Environment {
     fn new() -> Self {
         Self {
             env_values: HashMap::new(),
-            enclosing: None,
+            enclosed: None,
         }
     }
 
     fn enclosed(enclosed: Box<Environment>) -> Self {
         Self {
             env_values: HashMap::new(),
-            enclosing: Some(enclosed),
+            enclosed: Some(enclosed),
         }
     }
 
@@ -48,7 +48,7 @@ impl Environment {
     }
 
     fn define_enclosed(&mut self, name: &str, value: Value) {
-        match &mut self.enclosing {
+        match &mut self.enclosed {
             Some(boxed_env) => boxed_env.assign(name, value),
             None => println!("Variable not declared with name: {}", name),
         }
@@ -59,7 +59,7 @@ impl Environment {
         if let Some(var) = var_in_context {
             Some(var)
         } else {
-            match &self.enclosing {
+            match &self.enclosed {
                 None => None,
                 Some(boxed_env) => boxed_env.get(name),
             }
@@ -83,13 +83,13 @@ impl Interpreter {
             Stmt::Expr(expr) => self.evaluate_expression(expr),
             Stmt::Print(expr) => self.evaluate_print(expr),
             Stmt::Declaration(var) => self.evaluate_declaration(var),
-            Stmt::Block(block) => panic!("oi"),
+            Stmt::Block(block) => self.evaluate_block(block),
         }
     }
 
     fn evaluate_expression(&mut self, expr: Expr) -> Value {
         match expr {
-            Expr::Literal(expr) => self.evalute_literal(expr),
+            Expr::Literal(expr) => self.evaluate_literal(expr),
             Expr::Unary(expr) => self.evaluate_unary(expr),
             Expr::Binary(expr) => self.evaluate_binary(expr),
             Expr::Var(expr) => self.evaluate_variable(expr),
@@ -111,6 +111,13 @@ impl Interpreter {
     }
 
     fn evaluate_block(&mut self, block: Block) -> Value {
+        let prev_env = self.env.clone();
+        let new_env = Environment::enclosed(Box::new(self.env.clone()));
+        self.env = new_env;
+        for stmt in block.stmt_vec {
+            self.evaluate_node(stmt);
+        }
+        self.env = prev_env;
         Value::Nil
     }
     fn evaluate_assignment(&mut self, assignment_expr: Assignment) -> Value {
@@ -127,7 +134,7 @@ impl Interpreter {
         self.env.get(&name).unwrap().clone()
     }
 
-    fn evalute_literal(&mut self, expr: Literal) -> Value {
+    fn evaluate_literal(&mut self, expr: Literal) -> Value {
         match expr.token.literal {
             token::Literal::String(string) => Value::String(string),
             token::Literal::F64(f64) => Value::F64(f64),
