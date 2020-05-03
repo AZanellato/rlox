@@ -205,6 +205,7 @@ impl<'a> Parser<'a> {
 
         if let TokenType::Equal = next_token.t_type {
             self.token_list.next();
+
             if possible_expr == None {
                 panic!("Invalid assignment");
             }
