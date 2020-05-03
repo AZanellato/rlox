@@ -1,5 +1,5 @@
 use super::expr::{Assignment, Binary, Expr, Grouping, Literal, Unary, Var};
-use super::stmt::{self, Block, Stmt};
+use super::stmt::{self, Block, IfStmt, Stmt};
 use super::token::{self, Token, TokenType};
 use std::iter::Peekable;
 use std::slice::Iter;
@@ -41,6 +41,10 @@ impl<'a> Parser<'a> {
             TokenType::LeftBrace => {
                 self.token_list.next();
                 self.block_statement()
+            }
+            TokenType::If => {
+                self.token_list.next();
+                self.if_statement()
             }
             _ => self.stmt_expr(),
         }
@@ -142,6 +146,34 @@ impl<'a> Parser<'a> {
 
         Some(Stmt::Block(Block {
             stmt_vec: statements,
+        }))
+    }
+
+    fn if_statement(&mut self) -> Option<Stmt> {
+        let next_token = self.token_list.peek();
+        if next_token?.t_type != TokenType::LeftParen {
+            println!("Expect ( after if")
+        }
+        self.token_list.next();
+
+        let condition = self.expression()?;
+        let next_token = self.token_list.peek();
+        if next_token?.t_type != TokenType::RightParen {
+            println!("Expect ) after if condition")
+        }
+        self.token_list.next();
+
+        let if_stmt = self.parse_next_statement()?;
+        let mut else_stmt = None;
+        let next_token = self.token_list.peek();
+        if next_token?.t_type == TokenType::Else {
+            self.token_list.next();
+            else_stmt = self.parse_next_statement();
+        }
+        Some(Stmt::If(IfStmt {
+            condition,
+            truth_branch: Box::new(if_stmt),
+            false_branch: Box::new(else_stmt),
         }))
     }
 

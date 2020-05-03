@@ -84,6 +84,7 @@ impl Interpreter {
             Stmt::Print(expr) => self.evaluate_print(expr),
             Stmt::Declaration(var) => self.evaluate_declaration(var),
             Stmt::Block(block) => self.evaluate_block(block),
+            Stmt::If(var) => Value::Nil,
         }
     }
 

@@ -6,6 +6,7 @@ pub enum Stmt {
     Expr(Expr),
     Print(Expr),
     Block(Block),
+    If(IfStmt),
 }
 
 #[derive(PartialEq, Debug)]
@@ -17,4 +18,11 @@ pub struct Block {
 pub struct Var {
     pub value: Expr,
     pub name: String,
+}
+
+#[derive(PartialEq, Debug)]
+pub struct IfStmt {
+    pub truth_branch: Box<Stmt>,
+    pub false_branch: Box<Option<Stmt>>,
+    pub condition: Expr,
 }
