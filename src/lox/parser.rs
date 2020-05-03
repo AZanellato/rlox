@@ -201,9 +201,10 @@ impl<'a> Parser<'a> {
             return possible_expr;
         }
 
-        let next_token = self.token_list.next().unwrap();
+        let next_token = self.token_list.peek().unwrap();
 
         if let TokenType::Equal = next_token.t_type {
+            self.token_list.next();
             if possible_expr == None {
                 panic!("Invalid assignment");
             }
@@ -235,7 +236,7 @@ impl<'a> Parser<'a> {
             return expr;
         }
 
-        while let TokenType::BangEqual | TokenType::EqualEqual = self.token_list.peek()?.t_type {
+        if let TokenType::BangEqual | TokenType::EqualEqual = self.token_list.peek()?.t_type {
             let operator = self.token_list.next()?.clone();
             let right = Box::new(self.comparison()?);
             let left = Box::new(expr?);
@@ -244,9 +245,6 @@ impl<'a> Parser<'a> {
                 right,
                 operator,
             }));
-            if self.token_list.peek() == None {
-                break;
-            }
         }
 
         expr
@@ -258,7 +256,7 @@ impl<'a> Parser<'a> {
             return expr;
         }
 
-        while let TokenType::Greater
+        if let TokenType::Greater
         | TokenType::GreaterEqual
         | TokenType::Less
         | TokenType::LessEqual = self.token_list.peek()?.t_type
@@ -271,9 +269,6 @@ impl<'a> Parser<'a> {
                 right,
                 operator,
             }));
-            if self.token_list.peek() == None {
-                break;
-            }
         }
 
         expr
