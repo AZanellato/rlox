@@ -1,6 +1,6 @@
 use super::expr::Var as Var_expr;
 use super::expr::{Assignment, Binary, Expr, Literal, Unary};
-use super::stmt::{Block, Stmt, Var};
+use super::stmt::{Block, IfStmt, Stmt, Var};
 use super::token;
 use derive_more::Display;
 use std::collections::HashMap;
@@ -84,7 +84,7 @@ impl Interpreter {
             Stmt::Print(expr) => self.evaluate_print(expr),
             Stmt::Declaration(var) => self.evaluate_declaration(var),
             Stmt::Block(block) => self.evaluate_block(block),
-            Stmt::If(var) => Value::Nil,
+            Stmt::If(block) => self.evaluate_if(block),
         }
     }
 
@@ -127,6 +127,20 @@ impl Interpreter {
         let name = assignment_expr.name.lexeme;
         self.env.assign(&name, value);
         self.env.get(&name).unwrap().clone()
+    }
+
+    fn evaluate_if(&mut self, if_statement: IfStmt) -> Value {
+        let truth_branch = *if_statement.truth_branch;
+        let false_branch = *if_statement.false_branch;
+        let condition = self.evaluate_expression(if_statement.condition);
+
+        if condition.truthyness() {
+            self.evaluate_node(truth_branch)
+        } else if false_branch != None {
+            self.evaluate_node(false_branch.unwrap())
+        } else {
+            Value::Nil
+        }
     }
 
     fn evaluate_variable(&mut self, expr: Var_expr) -> Value {
