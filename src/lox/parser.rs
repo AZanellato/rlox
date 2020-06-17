@@ -1,5 +1,5 @@
 use super::expr::{Assignment, Binary, Expr, Grouping, Literal, Logical, Unary, Var};
-use super::stmt::{self, Block, IfStmt, Stmt};
+use super::stmt::{self, Block, IfStmt, Stmt, While};
 use super::token::{self, Token, TokenType};
 use std::iter::Peekable;
 use std::slice::Iter;
@@ -19,14 +19,14 @@ impl<'a> Parser<'a> {
 
     pub fn parse(&mut self) -> Vec<Stmt> {
         let mut statements = Vec::new();
-        while let Some(parsed_expression) = self.parse_next_statement() {
+        while let Some(parsed_expression) = self.next_stmt() {
             statements.push(parsed_expression);
         }
 
         statements
     }
 
-    fn parse_next_statement(&mut self) -> Option<Stmt> {
+    fn next_stmt(&mut self) -> Option<Stmt> {
         let peek_token = self.token_list.peek()?;
 
         match peek_token.t_type {
@@ -45,6 +45,10 @@ impl<'a> Parser<'a> {
             TokenType::If => {
                 self.token_list.next();
                 self.if_statement()
+            }
+            TokenType::While => {
+                self.token_list.next();
+                self.while_statement()
             }
             _ => self.stmt_expr(),
         }
@@ -136,7 +140,7 @@ impl<'a> Parser<'a> {
                 break;
             }
 
-            let next_stmt = self.parse_next_statement()?;
+            let next_stmt = self.next_stmt()?;
             statements.push(next_stmt);
         }
 
@@ -163,18 +167,36 @@ impl<'a> Parser<'a> {
         }
         self.token_list.next();
 
-        let if_stmt = self.parse_next_statement()?;
+        let if_stmt = self.next_stmt()?;
         let mut else_stmt = None;
         let next_token = self.token_list.peek();
         if next_token?.t_type == TokenType::Else {
             self.token_list.next();
-            else_stmt = self.parse_next_statement();
+            else_stmt = self.next_stmt();
         }
         Some(Stmt::If(IfStmt {
             condition,
             truth_branch: Box::new(if_stmt),
             false_branch: Box::new(else_stmt),
         }))
+    }
+
+    fn while_statement(&mut self) -> Option<Stmt> {
+        let next_token = self.token_list.peek();
+        if next_token?.t_type != TokenType::LeftParen {
+            println!("Expect ( after while")
+        }
+        self.token_list.next();
+
+        let condition = self.expression()?;
+        let next_token = self.token_list.peek();
+        if next_token?.t_type != TokenType::RightParen {
+            println!("Expect ) after while condition")
+        }
+        self.token_list.next();
+
+        let body = Box::new(self.next_stmt()?);
+        Some(Stmt::While(While { condition, body }))
     }
 
     fn stmt_expr(&mut self) -> Option<Stmt> {

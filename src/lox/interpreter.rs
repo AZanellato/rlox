@@ -1,6 +1,6 @@
 use super::expr::Var as Var_expr;
 use super::expr::{Assignment, Binary, Expr, Literal, Logical, Unary};
-use super::stmt::{Block, IfStmt, Stmt, Var};
+use super::stmt::{Block, IfStmt, Stmt, Var, While};
 use super::token;
 use derive_more::Display;
 use std::collections::HashMap;
@@ -85,6 +85,7 @@ impl Interpreter {
             Stmt::Declaration(var) => self.evaluate_declaration(var),
             Stmt::Block(block) => self.evaluate_block(block),
             Stmt::If(block) => self.evaluate_if(block),
+            Stmt::While(block) => self.evaluate_while(block),
         }
     }
 
@@ -163,6 +164,17 @@ impl Interpreter {
         } else {
             Value::Nil
         }
+    }
+
+    fn evaluate_while(&mut self, while_stmt: While) -> Value {
+        let mut condition = self.evaluate_expression(while_stmt.condition.clone());
+        while condition.truthyness() {
+            let body = *while_stmt.body.clone();
+            self.evaluate_node(body);
+            condition = self.evaluate_expression(while_stmt.condition.clone());
+        }
+
+        Value::Nil
     }
 
     fn evaluate_variable(&mut self, expr: Var_expr) -> Value {
