@@ -1,4 +1,4 @@
-use super::expr::{Assignment, Binary, Expr, Grouping, Literal, Unary, Var};
+use super::expr::{Assignment, Binary, Expr, Grouping, Literal, Logical, Unary, Var};
 use super::stmt::{self, Block, IfStmt, Stmt};
 use super::token::{self, Token, TokenType};
 use std::iter::Peekable;
@@ -195,7 +195,7 @@ impl<'a> Parser<'a> {
     }
 
     fn assignment(&mut self) -> Option<Expr> {
-        let possible_expr = self.equality();
+        let possible_expr = self.logic_or();
 
         if self.token_list.peek().is_none() {
             return possible_expr;
@@ -228,6 +228,41 @@ impl<'a> Parser<'a> {
         } else {
             possible_expr
         }
+    }
+
+    fn logic_or(&mut self) -> Option<Expr> {
+        let mut expr = self.logic_and();
+
+        while let TokenType::Or = self.token_list.peek()?.t_type {
+            let operator = self.token_list.next()?.clone();
+            let left = Box::new(expr?);
+            let right = Box::new(self.logic_and()?);
+
+            expr = Some(Expr::Logical(Logical {
+                left,
+                right,
+                operator,
+            }));
+        }
+
+        expr
+    }
+    fn logic_and(&mut self) -> Option<Expr> {
+        let mut expr = self.equality();
+
+        while let TokenType::And = self.token_list.peek()?.t_type {
+            let operator = self.token_list.next()?.clone();
+            let left = Box::new(expr?);
+            let right = Box::new(self.equality()?);
+
+            expr = Some(Expr::Logical(Logical {
+                left,
+                right,
+                operator,
+            }));
+        }
+
+        expr
     }
 
     fn equality(&mut self) -> Option<Expr> {

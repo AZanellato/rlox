@@ -5,6 +5,7 @@ pub enum Expr {
     Grouping(Grouping),
     Binary(Binary),
     Literal(Literal),
+    Logical(Logical),
     Var(Var),
     Assignment(Assignment),
     Unary(Unary),
@@ -17,6 +18,13 @@ pub struct Grouping {
 
 #[derive(PartialEq, Debug)]
 pub struct Binary {
+    pub left: Box<Expr>,
+    pub right: Box<Expr>,
+    pub operator: Token,
+}
+
+#[derive(PartialEq, Debug)]
+pub struct Logical {
     pub left: Box<Expr>,
     pub right: Box<Expr>,
     pub operator: Token,

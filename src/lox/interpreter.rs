@@ -1,5 +1,5 @@
 use super::expr::Var as Var_expr;
-use super::expr::{Assignment, Binary, Expr, Literal, Unary};
+use super::expr::{Assignment, Binary, Expr, Literal, Logical, Unary};
 use super::stmt::{Block, IfStmt, Stmt, Var};
 use super::token;
 use derive_more::Display;
@@ -91,6 +91,7 @@ impl Interpreter {
     fn evaluate_expression(&mut self, expr: Expr) -> Value {
         match expr {
             Expr::Literal(expr) => self.evaluate_literal(expr),
+            Expr::Logical(expr) => self.evaluate_logical(expr),
             Expr::Unary(expr) => self.evaluate_unary(expr),
             Expr::Binary(expr) => self.evaluate_binary(expr),
             Expr::Var(expr) => self.evaluate_variable(expr),
@@ -103,6 +104,27 @@ impl Interpreter {
         let value = self.evaluate_expression(expr);
         println!("{}", value);
         Value::Nil
+    }
+
+    fn evaluate_logical(&mut self, expr: Logical) -> Value {
+        let left = self.evaluate_expression(*expr.left);
+
+        match expr.operator.t_type {
+            token::TokenType::Or => {
+                if left.truthyness() {
+                    return left;
+                }
+                self.evaluate_expression(*expr.right)
+            }
+            token::TokenType::And => {
+                if !left.truthyness() {
+                    return left;
+                }
+
+                self.evaluate_expression(*expr.right)
+            }
+            _ => panic!("Not a logical operator"),
+        }
     }
 
     fn evaluate_declaration(&mut self, var: Var) -> Value {
