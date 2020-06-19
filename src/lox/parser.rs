@@ -4,6 +4,7 @@ use super::token::{self, Token, TokenType};
 use std::iter::Peekable;
 use std::slice::Iter;
 
+#[derive(Debug)]
 pub struct Parser<'a> {
     token_list: Peekable<Iter<'a, Token>>,
     error: bool,
@@ -195,8 +196,20 @@ impl<'a> Parser<'a> {
         }
         self.token_list.next();
 
-        let body = Box::new(self.next_stmt()?);
-        Some(Stmt::While(While { condition, body }))
+        if self.token_list.peek()?.t_type != TokenType::LeftBrace {
+            println!("Expected a block after while condition");
+            return None;
+        }
+
+        let next_stmt = self.next_stmt()?;
+
+        if self.token_list.next()?.t_type != TokenType::RightBrace {
+            println!("Expected a block after while condition");
+            return None;
+        }
+        let body = Box::new(next_stmt);
+        let result = Stmt::While(While { condition, body });
+        Some(result)
     }
 
     fn stmt_expr(&mut self) -> Option<Stmt> {
@@ -205,6 +218,7 @@ impl<'a> Parser<'a> {
         if next_token?.t_type != TokenType::Semicolon {
             println!("Expect ; after expression")
         }
+        self.token_list.next();
         if expr == None {
             None
         } else {
@@ -431,7 +445,6 @@ impl<'a> Parser<'a> {
 
 #[cfg(test)]
 mod tests {
-    // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
     use crate::lox::expr::Literal as ExprLiteral;
     use crate::lox::token::Literal;
