@@ -65,7 +65,7 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    pub fn scan_tokens(&mut self) -> &Vec<Token> {
+    pub fn scan_text(&mut self) -> &Vec<Token> {
         while self.chars.peek() != None {
             self.scan_next_token();
         }
@@ -238,5 +238,137 @@ impl<'a> Scanner<'a> {
     fn add_token<S: AsRef<str>>(&mut self, token: TokenType, token_str: S, lit: Literal) {
         let next_token = Token::new(token, token_str.as_ref().to_string(), lit, self.line as u32);
         self.tokens.push(next_token);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::lox::expr::Literal as ExprLiteral;
+    use crate::lox::token::Literal;
+
+    #[test]
+    fn literal_string() {
+        let string_token = Token::new(
+            TokenType::String,
+            "string".to_owned(),
+            Literal::String("string".into()),
+            1,
+        );
+
+        let semicolon = Token::new(TokenType::Semicolon, ";".to_owned(), Literal::None, 1);
+
+        let tokens = vec![string_token, semicolon];
+
+        let text = "";
+        let mut scanner = Scanner::new(text);
+        assert_eq!(tokens, *scanner.scan_text());
+    }
+
+    #[test]
+    fn negation() {
+        let number = Token::new(TokenType::Number, "1".to_owned(), Literal::F64(1.0), 1);
+        let operator = Token::new(TokenType::Bang, "!".to_owned(), Literal::None, 1);
+
+        let semicolon = Token::new(TokenType::Semicolon, ";".to_owned(), Literal::None, 1);
+        let tokens = vec![operator, number, semicolon];
+
+        let text = "";
+        let mut scanner = Scanner::new(text);
+        assert_eq!(tokens, *scanner.scan_text());
+    }
+
+    #[test]
+    fn addition() {
+        let first_number = Token::new(TokenType::Number, "1".to_owned(), Literal::F64(1.0), 1);
+        let second_number = Token::new(TokenType::Number, "2".to_owned(), Literal::F64(2.0), 1);
+        let operator = Token::new(TokenType::Plus, "+".to_owned(), Literal::None, 1);
+
+        let semicolon = Token::new(TokenType::Semicolon, ";".to_owned(), Literal::None, 1);
+        let tokens = vec![first_number, operator, second_number, semicolon];
+
+        let text = "";
+        let mut scanner = Scanner::new(text);
+        assert_eq!(tokens, *scanner.scan_text());
+    }
+
+    #[test]
+    fn equality() {
+        let first_number = Token::new(TokenType::Number, "1".to_owned(), Literal::F64(1.0), 1);
+        let second_number = Token::new(TokenType::Number, "1".to_owned(), Literal::F64(1.0), 1);
+        let operator = Token::new(TokenType::EqualEqual, "==".to_owned(), Literal::None, 1);
+
+        let semicolon = Token::new(TokenType::Semicolon, ";".to_owned(), Literal::None, 1);
+        let tokens = vec![first_number, operator, second_number, semicolon];
+
+        let text = "";
+        let mut scanner = Scanner::new(text);
+        assert_eq!(tokens, *scanner.scan_text());
+    }
+
+    #[test]
+    fn comparison() {
+        let first_number = Token::new(TokenType::Number, "1".to_owned(), Literal::F64(1.0), 1);
+        let second_number = Token::new(TokenType::Number, "2".to_owned(), Literal::F64(2.0), 1);
+        let operator = Token::new(TokenType::Greater, ">".to_owned(), Literal::None, 1);
+        let semicolon = Token::new(TokenType::Semicolon, ";".to_owned(), Literal::None, 1);
+
+        let tokens = vec![first_number, operator, second_number, semicolon];
+
+        let text = "";
+        let mut scanner = Scanner::new(text);
+        assert_eq!(tokens, *scanner.scan_text());
+    }
+
+    #[test]
+    fn multiplication() {
+        let first_number = Token::new(TokenType::Number, "1".to_owned(), Literal::F64(1.0), 1);
+        let operator = Token::new(TokenType::Star, "*".to_owned(), Literal::None, 1);
+        let second_number = Token::new(TokenType::Number, "1".to_owned(), Literal::F64(1.0), 1);
+        let semicolon = Token::new(TokenType::Semicolon, ";".to_owned(), Literal::None, 1);
+
+        let tokens = vec![first_number, operator, second_number, semicolon];
+        let text = "";
+        let mut scanner = Scanner::new(text);
+        assert_eq!(tokens, *scanner.scan_text());
+    }
+
+    #[test]
+    fn while_statement() {
+        let while_kw = Token::new(TokenType::While, "while".to_owned(), Literal::None, 1);
+
+        let left_paren = Token::new(TokenType::LeftParen, "(".to_owned(), Literal::None, 1);
+        let variable = Token::new(TokenType::Identifier, "a".to_owned(), Literal::None, 1);
+        let greater = Token::new(TokenType::Less, "<".to_owned(), Literal::None, 1);
+        let two = Token::new(TokenType::Number, "2".to_owned(), Literal::F64(2.0), 1);
+        let right_paren = Token::new(TokenType::RightParen, ")".to_owned(), Literal::None, 1);
+
+        let left_bracket = Token::new(TokenType::LeftBrace, "{".to_owned(), Literal::None, 1);
+        let plus_sign = Token::new(TokenType::Plus, "+".to_owned(), Literal::None, 1);
+        let equal_sign = Token::new(TokenType::Equal, "=".to_owned(), Literal::None, 1);
+        let one = Token::new(TokenType::Number, "1".to_owned(), Literal::F64(1.0), 1);
+        let right_bracket = Token::new(TokenType::RightBrace, "}".to_owned(), Literal::None, 1);
+        let semicolon = Token::new(TokenType::Semicolon, ";".to_owned(), Literal::None, 1);
+
+        let tokens = vec![
+            while_kw,
+            left_paren,
+            variable.clone(),
+            greater.clone(),
+            two.clone(),
+            right_paren,
+            left_bracket,
+            variable.clone(),
+            equal_sign,
+            variable.clone(),
+            plus_sign,
+            one,
+            semicolon,
+            right_bracket,
+        ];
+
+        let text = "";
+        let mut scanner = Scanner::new(text);
+        assert_eq!(tokens, *scanner.scan_text());
     }
 }

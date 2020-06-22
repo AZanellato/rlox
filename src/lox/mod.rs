@@ -67,7 +67,7 @@ impl Lox {
 
     fn run(&self, interpreter: &mut Interpreter, source: String) {
         let mut scanner = scanner::Scanner::new(&source);
-        let tokens = scanner.scan_tokens();
+        let tokens = scanner.scan_text();
         let mut parser = parser::Parser::new(tokens);
         let statements = parser.parse();
         for node in statements {
