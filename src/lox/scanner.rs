@@ -244,7 +244,6 @@ impl<'a> Scanner<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::lox::expr::Literal as ExprLiteral;
     use crate::lox::token::Literal;
 
     #[test]
@@ -257,10 +256,11 @@ mod tests {
         );
 
         let semicolon = Token::new(TokenType::Semicolon, ";".to_owned(), Literal::None, 1);
+        let eof = Token::new(TokenType::EOF, "".to_owned(), Literal::None, 1);
 
-        let tokens = vec![string_token, semicolon];
+        let tokens = vec![string_token, semicolon, eof];
 
-        let text = "";
+        let text = "\"string\";";
         let mut scanner = Scanner::new(text);
         assert_eq!(tokens, *scanner.scan_text());
     }
@@ -271,9 +271,10 @@ mod tests {
         let operator = Token::new(TokenType::Bang, "!".to_owned(), Literal::None, 1);
 
         let semicolon = Token::new(TokenType::Semicolon, ";".to_owned(), Literal::None, 1);
-        let tokens = vec![operator, number, semicolon];
+        let eof = Token::new(TokenType::EOF, "".to_owned(), Literal::None, 1);
+        let tokens = vec![operator, number, semicolon, eof];
 
-        let text = "";
+        let text = "!1;";
         let mut scanner = Scanner::new(text);
         assert_eq!(tokens, *scanner.scan_text());
     }
@@ -285,9 +286,10 @@ mod tests {
         let operator = Token::new(TokenType::Plus, "+".to_owned(), Literal::None, 1);
 
         let semicolon = Token::new(TokenType::Semicolon, ";".to_owned(), Literal::None, 1);
-        let tokens = vec![first_number, operator, second_number, semicolon];
+        let eof = Token::new(TokenType::EOF, "".to_owned(), Literal::None, 1);
+        let tokens = vec![first_number, operator, second_number, semicolon, eof];
 
-        let text = "";
+        let text = "1 + 2;";
         let mut scanner = Scanner::new(text);
         assert_eq!(tokens, *scanner.scan_text());
     }
@@ -299,9 +301,10 @@ mod tests {
         let operator = Token::new(TokenType::EqualEqual, "==".to_owned(), Literal::None, 1);
 
         let semicolon = Token::new(TokenType::Semicolon, ";".to_owned(), Literal::None, 1);
-        let tokens = vec![first_number, operator, second_number, semicolon];
+        let eof = Token::new(TokenType::EOF, "".to_owned(), Literal::None, 1);
+        let tokens = vec![first_number, operator, second_number, semicolon, eof];
 
-        let text = "";
+        let text = "1 == 1;";
         let mut scanner = Scanner::new(text);
         assert_eq!(tokens, *scanner.scan_text());
     }
@@ -313,9 +316,10 @@ mod tests {
         let operator = Token::new(TokenType::Greater, ">".to_owned(), Literal::None, 1);
         let semicolon = Token::new(TokenType::Semicolon, ";".to_owned(), Literal::None, 1);
 
-        let tokens = vec![first_number, operator, second_number, semicolon];
+        let eof = Token::new(TokenType::EOF, "".to_owned(), Literal::None, 1);
+        let tokens = vec![first_number, operator, second_number, semicolon, eof];
 
-        let text = "";
+        let text = "1 > 2;";
         let mut scanner = Scanner::new(text);
         assert_eq!(tokens, *scanner.scan_text());
     }
@@ -327,8 +331,9 @@ mod tests {
         let second_number = Token::new(TokenType::Number, "1".to_owned(), Literal::F64(1.0), 1);
         let semicolon = Token::new(TokenType::Semicolon, ";".to_owned(), Literal::None, 1);
 
-        let tokens = vec![first_number, operator, second_number, semicolon];
-        let text = "";
+        let eof = Token::new(TokenType::EOF, "".to_owned(), Literal::None, 1);
+        let tokens = vec![first_number, operator, second_number, semicolon, eof];
+        let text = "1 * 1;";
         let mut scanner = Scanner::new(text);
         assert_eq!(tokens, *scanner.scan_text());
     }
@@ -350,6 +355,7 @@ mod tests {
         let right_bracket = Token::new(TokenType::RightBrace, "}".to_owned(), Literal::None, 1);
         let semicolon = Token::new(TokenType::Semicolon, ";".to_owned(), Literal::None, 1);
 
+        let eof = Token::new(TokenType::EOF, "".to_owned(), Literal::None, 1);
         let tokens = vec![
             while_kw,
             left_paren,
@@ -365,9 +371,10 @@ mod tests {
             one,
             semicolon,
             right_bracket,
+            eof,
         ];
 
-        let text = "";
+        let text = "while(a < 2) { a = a + 1; }";
         let mut scanner = Scanner::new(text);
         assert_eq!(tokens, *scanner.scan_text());
     }
