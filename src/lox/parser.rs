@@ -619,4 +619,81 @@ mod tests {
             unreachable!()
         }
     }
+
+    #[test]
+    fn while_statement_parse() {
+        let while_kw = Token::new(TokenType::While, "while".to_owned(), Literal::None, 1);
+
+        let left_paren = Token::new(TokenType::LeftParen, "(".to_owned(), Literal::None, 1);
+        let variable = Token::new(TokenType::Identifier, "a".to_owned(), Literal::None, 1);
+        let greater = Token::new(TokenType::Less, "<".to_owned(), Literal::None, 1);
+        let two = Token::new(TokenType::Number, "2".to_owned(), Literal::F64(2.0), 1);
+        let right_paren = Token::new(TokenType::RightParen, ")".to_owned(), Literal::None, 1);
+
+        let left_bracket = Token::new(TokenType::LeftBrace, "{".to_owned(), Literal::None, 1);
+        let plus_sign = Token::new(TokenType::Plus, "+".to_owned(), Literal::None, 1);
+        let equal_sign = Token::new(TokenType::Equal, "=".to_owned(), Literal::None, 1);
+        let one = Token::new(TokenType::Number, "1".to_owned(), Literal::F64(1.0), 1);
+        let right_bracket = Token::new(TokenType::RightBrace, "}".to_owned(), Literal::None, 1);
+        let semicolon = Token::new(TokenType::Semicolon, ";".to_owned(), Literal::None, 1);
+
+        let tokens = vec![
+            while_kw,
+            left_paren,
+            variable.clone(),
+            greater.clone(),
+            two.clone(),
+            right_paren,
+            left_bracket,
+            variable.clone(),
+            equal_sign,
+            variable.clone(),
+            plus_sign.clone(),
+            one.clone(),
+            semicolon,
+            right_bracket,
+        ];
+
+        let while_left = Expr::Literal(super::Literal {
+            token: variable.clone(),
+        });
+        let while_right = Expr::Literal(super::Literal { token: two.clone() });
+        let while_greater_expr = Expr::Binary(Binary {
+            left: Box::new(while_left),
+            right: Box::new(while_right),
+            operator: greater.clone(),
+        });
+
+        let block_var = Expr::Var(super::Var {
+            name: variable.clone(),
+        });
+        let block_value = Expr::Literal(super::Literal { token: one.clone() });
+        let block_right = Expr::Binary(Binary {
+            left: Box::new(block_var),
+            right: Box::new(block_value),
+            operator: plus_sign.clone(),
+        });
+        let block_left = Stmt::Expr(Expr::Assignment(super::Assignment {
+            name: variable,
+            value: Box::new(block_right),
+        }));
+
+        let block = Stmt::Block(super::Block {
+            stmt_vec: vec![block_left],
+        });
+
+        let mut parser = Parser::new(&tokens);
+        let mut stmt = parser.parse();
+        assert_eq!(
+            match stmt.pop().unwrap() {
+                Stmt::Expr(expr) => expr,
+                x => {
+                    println!("{:?}", x);
+                    panic!()
+                }
+            },
+            while_greater_expr
+        );
+        assert_eq!(stmt.pop().unwrap(), block);
+    }
 }
