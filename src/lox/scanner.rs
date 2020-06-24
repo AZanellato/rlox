@@ -81,6 +81,9 @@ impl<'a> Scanner<'a> {
             && self.chars.peek() != Some(&';')
             && self.chars.peek() != None
         {
+            if SINGLE_TOKEN_MAP.contains_key(self.chars.peek().unwrap()) {
+                break;
+            }
             match self.chars.peek().unwrap() {
                 'a'..='z' | 'A'..='Z' | '_' | '-' => {
                     identifier.push(self.chars.next().unwrap());
