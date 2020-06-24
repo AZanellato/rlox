@@ -448,6 +448,7 @@ mod tests {
     use super::*;
     use crate::lox::expr::Literal as ExprLiteral;
     use crate::lox::token::Literal;
+    use pretty_assertions::{assert_eq, assert_ne};
 
     #[test]
     fn literal_string() {
@@ -654,8 +655,8 @@ mod tests {
             right_bracket,
         ];
 
-        let while_left = Expr::Literal(super::Literal {
-            token: variable.clone(),
+        let while_left = Expr::Var(super::Var {
+            name: variable.clone(),
         });
         let while_right = Expr::Literal(super::Literal { token: two.clone() });
         let while_greater_expr = Expr::Binary(Binary {
@@ -682,18 +683,13 @@ mod tests {
             stmt_vec: vec![block_left],
         });
 
+        let while_stmt = Stmt::While(While {
+            condition: while_greater_expr,
+            body: Box::new(block),
+        });
+
         let mut parser = Parser::new(&tokens);
         let mut stmt = parser.parse();
-        assert_eq!(
-            match stmt.pop().unwrap() {
-                Stmt::Expr(expr) => expr,
-                x => {
-                    println!("{:?}", x);
-                    panic!()
-                }
-            },
-            while_greater_expr
-        );
-        assert_eq!(stmt.pop().unwrap(), block);
+        assert_eq!(while_stmt, stmt.pop().unwrap());
     }
 }
