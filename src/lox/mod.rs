@@ -11,7 +11,7 @@ extern crate derive_more;
 extern crate phf;
 extern crate rustyline;
 
-use interpreter::Interpreter;
+use self::interpreter::interpreter::Interpreter;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 

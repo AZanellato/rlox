@@ -1,10 +1,12 @@
-use super::expr::Var as Var_expr;
-use super::expr::{Assignment, Binary, Expr, Literal, Logical, Unary};
-use super::stmt::{Block, IfStmt, Stmt, Var, While};
-use super::token;
+use super::environment::Environment;
+use crate::lox::expr::Var as Var_expr;
+use crate::lox::expr::{Assignment, Binary, Expr, Literal, Logical, Unary};
+use crate::lox::stmt::{Block, IfStmt, Stmt, Var, While};
+use crate::lox::token;
 use derive_more::Display;
-use std::collections::HashMap;
+use std::cell::RefCell;
 use std::ops::{Add, Div, Mul, Neg, Not, Sub};
+use std::rc::Rc;
 
 #[derive(PartialEq, PartialOrd, Debug, Display, Clone)]
 pub enum Value {
@@ -12,59 +14,6 @@ pub enum Value {
     F64(f64),
     Boolean(bool),
     Nil,
-}
-
-#[derive(Clone, Debug)]
-struct Environment {
-    env_values: HashMap<String, Value>,
-    enclosed: Option<Box<Environment>>,
-}
-
-impl Environment {
-    fn new() -> Self {
-        Self {
-            env_values: HashMap::new(),
-            enclosed: None,
-        }
-    }
-
-    fn enclosed(enclosed: Box<Environment>) -> Self {
-        Self {
-            env_values: HashMap::new(),
-            enclosed: Some(enclosed),
-        }
-    }
-
-    fn define(&mut self, name: &str, value: Value) {
-        let new_name = name.into();
-        self.env_values.insert(new_name, value);
-    }
-
-    fn assign(&mut self, name: &str, value: Value) {
-        match self.get(name) {
-            Some(_) => self.define(name, value),
-            None => self.define_enclosed(name, value),
-        }
-    }
-
-    fn define_enclosed(&mut self, name: &str, value: Value) {
-        match &mut self.enclosed {
-            Some(boxed_env) => boxed_env.assign(name, value),
-            None => println!("Variable not declared with name: {}", name),
-        }
-    }
-
-    fn get(&self, name: &str) -> Option<&Value> {
-        let var_in_context = self.env_values.get(name);
-        if let Some(var) = var_in_context {
-            Some(var)
-        } else {
-            match &self.enclosed {
-                None => None,
-                Some(boxed_env) => boxed_env.get(name),
-            }
-        }
-    }
 }
 
 #[derive(Debug)]
@@ -135,13 +84,11 @@ impl Interpreter {
     }
 
     fn evaluate_block(&mut self, block: Block) -> Value {
-        let prev_env = self.env.clone();
-        let new_env = Environment::enclosed(Box::new(self.env.clone()));
-        self.env = new_env;
+        let env = Rc::new(RefCell::new(Environment::new()));
+        self.env.enclose(env);
         for stmt in block.stmt_vec {
             self.evaluate_node(stmt);
         }
-        self.env = prev_env;
         Value::Nil
     }
     fn evaluate_assignment(&mut self, assignment_expr: Assignment) -> Value {
@@ -149,7 +96,8 @@ impl Interpreter {
         let value = self.evaluate_expression(*expr);
         let name = assignment_expr.name.lexeme;
         self.env.assign(&name, value);
-        self.env.get(&name).unwrap().clone()
+        let value = self.env.get(&name);
+        value.unwrap().clone()
     }
 
     fn evaluate_if(&mut self, if_statement: IfStmt) -> Value {
@@ -167,11 +115,13 @@ impl Interpreter {
     }
 
     fn evaluate_while(&mut self, while_stmt: While) -> Value {
+        let mut times = 1;
         let mut condition = self.evaluate_expression(while_stmt.condition.clone());
-        while condition.truthyness() {
+        while condition.truthyness() && times != 0 {
             let body = *while_stmt.body.clone();
             self.evaluate_node(body);
             condition = self.evaluate_expression(while_stmt.condition.clone());
+            times -= 1;
         }
 
         Value::Nil
@@ -180,7 +130,10 @@ impl Interpreter {
     fn evaluate_variable(&mut self, expr: Var_expr) -> Value {
         let identifier = expr.name;
         let name = identifier.lexeme;
-        self.env.get(&name).unwrap().clone()
+        match self.env.get(&name) {
+            Some(value) => value.clone(),
+            None => panic!("The variable {var_name} doesn't exist", var_name = name),
+        }
     }
 
     fn evaluate_literal(&mut self, expr: Literal) -> Value {
@@ -420,5 +373,66 @@ mod tests {
 
         let value = interpreter.evaluate_expression(expr);
         assert_eq!(value, Value::F64(9.0));
+    }
+
+    #[test]
+    fn while_loop_interpreter() {
+        let variable = Token::new(TokenType::Identifier, "a".to_owned(), Literal::None, 1);
+        let greater = Token::new(TokenType::Less, "<".to_owned(), Literal::None, 1);
+        let two = Token::new(TokenType::Number, "2".to_owned(), Literal::F64(2.0), 1);
+        let plus_sign = Token::new(TokenType::Plus, "+".to_owned(), Literal::None, 1);
+        let one = Token::new(TokenType::Number, "1".to_owned(), Literal::F64(1.0), 1);
+
+        let var_dcl = Stmt::Declaration(Var {
+            name: "a".to_owned(),
+            value: Expr::Literal(crate::lox::expr::Literal { token: one.clone() }),
+        });
+
+        let while_left = Expr::Var(crate::lox::expr::Var {
+            name: variable.clone(),
+        });
+        let while_right = Expr::Literal(crate::lox::expr::Literal { token: two.clone() });
+        let while_greater_expr = Expr::Binary(Binary {
+            left: Box::new(while_left),
+            right: Box::new(while_right),
+            operator: greater.clone(),
+        });
+
+        let block_var = Expr::Var(crate::lox::expr::Var {
+            name: variable.clone(),
+        });
+        let block_value = Expr::Literal(crate::lox::expr::Literal { token: one.clone() });
+        let block_right = Expr::Binary(Binary {
+            left: Box::new(block_var),
+            right: Box::new(block_value),
+            operator: plus_sign.clone(),
+        });
+        let block_left = Stmt::Expr(Expr::Assignment(super::Assignment {
+            name: variable,
+            value: Box::new(block_right),
+        }));
+
+        let block = Stmt::Block(super::Block {
+            stmt_vec: vec![block_left],
+        });
+
+        let while_stmt = Stmt::While(While {
+            condition: while_greater_expr,
+            body: Box::new(block),
+        });
+
+        let mut interpreter = Interpreter::new();
+
+        interpreter.evaluate_node(var_dcl);
+        let value = interpreter.evaluate_node(while_stmt);
+        assert_eq!(value, Value::F64(9.0));
+        // Finalmente entendi o problema :tada:
+        // While executa o bloco -- o bloco altera o valor da variável dentro
+        // da nova env, que sai do escopo no final do while. Na próxima execução,
+        // inicia um novo bloco - que altera o valor da variável dentro dele e
+        // assim infinitamente.
+        //
+        // Problema: O bloco tinha que alterar o valor externo, _não_ interno.
+        // Também: Criar um novo env toda vez que o bloco for utilizado é... Ruim.
     }
 }
