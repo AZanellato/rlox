@@ -22,32 +22,20 @@ impl Environment {
     }
 
     pub fn assign(&mut self, name: &str, value: Value) {
-        dbg!(&self);
-        println!("assign");
         match self.env_values.get(name) {
             Some(_) => self.define(name, value),
-            None => self.define_enclosed(name, value),
+            None => match &self.parent_env {
+                Some(parent_env) => {
+                    let env = &mut *parent_env.borrow_mut();
+                    env.assign(name, value)
+                }
+                None => println!("Variable not declared with name: {}", name),
+            },
         }
-        dbg!(&self);
     }
 
     pub fn define(&mut self, name: &str, value: Value) {
-        dbg!(&self);
-        println!("define");
-        let new_name = name.into();
-        self.env_values.insert(new_name, value);
-        dbg!(&self);
-    }
-
-    pub fn define_enclosed(&mut self, name: &str, value: Value) {
-        match &self.parent_env {
-            Some(boxed_env) => {
-                let env = &mut *boxed_env.borrow_mut();
-                env.assign(name, value)
-            }
-            None => println!("Variable not declared with name: {}", name),
-        }
-        dbg!(&self);
+        self.env_values.insert(name.into(), value);
     }
 
     pub fn get(&self, name: &str) -> Option<Value> {

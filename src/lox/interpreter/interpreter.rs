@@ -18,12 +18,12 @@ pub enum Value {
 
 #[derive(Debug)]
 pub struct Interpreter {
-    env: Environment,
+    env: Rc<RefCell<Environment>>,
 }
 
 impl Interpreter {
     pub fn new() -> Self {
-        let env = Environment::new();
+        let env = Rc::new(RefCell::new(Environment::new()));
         Self { env }
     }
 
@@ -79,24 +79,27 @@ impl Interpreter {
 
     fn evaluate_declaration(&mut self, var: Var) -> Value {
         let value = self.evaluate_expression(var.value);
-        self.env.define(&var.name, value);
-        self.env.get(&var.name).unwrap().clone()
+        self.env.borrow_mut().define(&var.name, value);
+        self.env.borrow_mut().get(&var.name).unwrap().clone()
     }
 
     fn evaluate_block(&mut self, block: Block) -> Value {
+        let prev_env = Rc::clone(&self.env);
         let env = Rc::new(RefCell::new(Environment::new()));
-        self.env.enclose(env);
+        self.env = env;
+        self.env.borrow_mut().enclose(prev_env.clone());
         for stmt in block.stmt_vec {
             self.evaluate_node(stmt);
         }
+        self.env = prev_env;
         Value::Nil
     }
     fn evaluate_assignment(&mut self, assignment_expr: Assignment) -> Value {
         let expr = assignment_expr.value;
         let value = self.evaluate_expression(*expr);
         let name = assignment_expr.name.lexeme;
-        self.env.assign(&name, value);
-        let value = self.env.get(&name);
+        self.env.borrow_mut().assign(&name, value);
+        let value = self.env.borrow_mut().get(&name);
         value.unwrap().clone()
     }
 
@@ -115,13 +118,11 @@ impl Interpreter {
     }
 
     fn evaluate_while(&mut self, while_stmt: While) -> Value {
-        let mut times = 1;
         let mut condition = self.evaluate_expression(while_stmt.condition.clone());
-        while condition.truthyness() && times != 0 {
+        while condition.truthyness() {
             let body = *while_stmt.body.clone();
             self.evaluate_node(body);
             condition = self.evaluate_expression(while_stmt.condition.clone());
-            times -= 1;
         }
 
         Value::Nil
@@ -130,7 +131,7 @@ impl Interpreter {
     fn evaluate_variable(&mut self, expr: Var_expr) -> Value {
         let identifier = expr.name;
         let name = identifier.lexeme;
-        match self.env.get(&name) {
+        match self.env.borrow_mut().get(&name) {
             Some(value) => value.clone(),
             None => panic!("The variable {var_name} doesn't exist", var_name = name),
         }
@@ -424,15 +425,10 @@ mod tests {
         let mut interpreter = Interpreter::new();
 
         interpreter.evaluate_node(var_dcl);
-        let value = interpreter.evaluate_node(while_stmt);
-        assert_eq!(value, Value::F64(9.0));
-        // Finalmente entendi o problema :tada:
-        // While executa o bloco -- o bloco altera o valor da variável dentro
-        // da nova env, que sai do escopo no final do while. Na próxima execução,
-        // inicia um novo bloco - que altera o valor da variável dentro dele e
-        // assim infinitamente.
-        //
-        // Problema: O bloco tinha que alterar o valor externo, _não_ interno.
-        // Também: Criar um novo env toda vez que o bloco for utilizado é... Ruim.
+        interpreter.evaluate_node(while_stmt);
+        assert_eq!(
+            interpreter.env.borrow_mut().get("a").unwrap(),
+            Value::F64(2.0)
+        );
     }
 }
