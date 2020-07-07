@@ -65,6 +65,7 @@ impl<'a> Parser<'a> {
         if next_token?.t_type != TokenType::Semicolon {
             println!("Expect ; after value")
         }
+        self.token_list.next();
 
         Some(Stmt::Print(value.unwrap()))
     }
@@ -77,7 +78,6 @@ impl<'a> Parser<'a> {
             println!("Expect ; after value");
             return None;
         }
-
         let next_token = next_token.unwrap();
 
         if next_token.t_type == TokenType::Semicolon {
@@ -89,7 +89,7 @@ impl<'a> Parser<'a> {
             return None;
         }
 
-        let next_token = self.token_list.next();
+        let equal_token = self.token_list.next();
 
         let expr_value = self.expression();
 
@@ -98,7 +98,7 @@ impl<'a> Parser<'a> {
                 TokenType::Nil,
                 "".to_owned(),
                 token::Literal::None,
-                next_token?.line,
+                equal_token?.line,
             );
             let literal = Literal { token };
 
@@ -112,7 +112,14 @@ impl<'a> Parser<'a> {
             name: name.lexeme.to_owned(),
         };
 
-        Some(Stmt::Declaration(variable))
+        let next_token = self.token_list.next();
+
+        if let Some(token) = next_token {
+            if token.t_type == TokenType::Semicolon {
+                return Some(Stmt::Declaration(variable));
+            }
+        }
+        panic!("Expect ; after declaration");
     }
 
     fn empty_init(&mut self, name: &Token) -> Stmt {
@@ -214,8 +221,13 @@ impl<'a> Parser<'a> {
 
     fn stmt_expr(&mut self) -> Option<Stmt> {
         let expr = self.assignment();
-        let next_token = self.token_list.peek();
-        if next_token?.t_type != TokenType::Semicolon {
+        let next_token = self.token_list.peek()?;
+
+        if next_token.t_type == TokenType::EOF {
+            return None;
+        }
+
+        if next_token.t_type != TokenType::Semicolon {
             println!("Expect ; after expression")
         }
         self.token_list.next();
