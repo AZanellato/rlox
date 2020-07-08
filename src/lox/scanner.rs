@@ -176,7 +176,7 @@ impl<'a> Scanner<'a> {
         let ch = self.chars.next().unwrap_or(' ');
         if SINGLE_TOKEN_MAP.contains_key(&ch) {
             let token = SINGLE_TOKEN_MAP.get(&ch).unwrap();
-            return self.add_token(token.clone(), &ch.to_string(), Literal::None);
+            return self.add_token(*token, &ch.to_string(), Literal::None);
         }
         match ch {
             '"' => self.string(),

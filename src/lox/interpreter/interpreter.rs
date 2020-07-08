@@ -80,7 +80,7 @@ impl Interpreter {
     fn evaluate_declaration(&mut self, var: Var) -> Value {
         let value = self.evaluate_expression(var.value);
         self.env.borrow_mut().define(&var.name, value);
-        self.env.borrow_mut().get(&var.name).unwrap().clone()
+        self.env.borrow_mut().get(&var.name).unwrap()
     }
 
     fn evaluate_block(&mut self, block: Block) -> Value {
@@ -100,7 +100,7 @@ impl Interpreter {
         let name = assignment_expr.name.lexeme;
         self.env.borrow_mut().assign(&name, value);
         let value = self.env.borrow_mut().get(&name);
-        value.unwrap().clone()
+        value.unwrap()
     }
 
     fn evaluate_if(&mut self, if_statement: IfStmt) -> Value {
@@ -132,7 +132,7 @@ impl Interpreter {
         let identifier = expr.name;
         let name = identifier.lexeme;
         match self.env.borrow_mut().get(&name) {
-            Some(value) => value.clone(),
+            Some(value) => value,
             None => panic!("The variable {var_name} doesn't exist", var_name = name),
         }
     }
@@ -254,7 +254,6 @@ impl Not for Value {
 }
 
 mod tests {
-    // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
     use crate::lox::expr::Literal as ExprLiteral;
     use crate::lox::token::{Literal, Token, TokenType};

@@ -28,7 +28,7 @@ impl Lox {
         }
     }
 
-    pub fn prompt(&mut self) -> () {
+    pub fn prompt(&mut self) {
         let mut interpreter = Interpreter::new();
         let mut rl = Editor::<()>::new();
         loop {
@@ -55,8 +55,8 @@ impl Lox {
         }
     }
 
-    pub fn runfile(&self, path: std::path::PathBuf) -> () {
-        let source = fs::read_to_string(path).unwrap_or("".to_string());
+    pub fn runfile(&self, path: std::path::PathBuf) {
+        let source = fs::read_to_string(path).unwrap_or_else(|_| "".to_string());
         let mut interpreter = Interpreter::new();
         self.run(&mut interpreter, source);
         if self.had_errors {
@@ -73,13 +73,4 @@ impl Lox {
             interpreter.evaluate_node(node);
         }
     }
-
-    // fn error(&mut self, line: u32, message: String) -> () {
-    //     self.report(line, "".to_string(), message);
-    // }
-
-    // fn report(&mut self, line_number: u32, locale: String, error_msg: String) -> () {
-    //     println!("line: {} Error {}: {}", line_number, locale, error_msg);
-    //     self.had_errors = true;
-    // }
 }
