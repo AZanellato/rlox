@@ -43,6 +43,10 @@ impl<'a> Parser<'a> {
                 self.token_list.next();
                 self.block_statement()
             }
+            TokenType::For => {
+                self.token_list.next();
+                self.for_loop()
+            }
             TokenType::If => {
                 self.token_list.next();
                 self.if_statement()
@@ -161,6 +165,84 @@ impl<'a> Parser<'a> {
         }))
     }
 
+    fn for_loop(&mut self) -> Option<Stmt> {
+        let next = self.token_list.next()?;
+        if next.t_type != TokenType::LeftParen {
+            panic!("Expect `(` after `for`.");
+        }
+
+        let peek = self.token_list.peek()?;
+        let initializer = match peek.t_type {
+            TokenType::Semicolon => None,
+            TokenType::Var => {
+                self.token_list.next();
+                self.variable_declaration()
+            }
+            _ => self.stmt_expr(),
+        };
+        let next = self.token_list.next();
+
+        let written_condition = match next {
+            None => None,
+            Some(token) => match token.t_type {
+                TokenType::Semicolon => None,
+                _ => self.expression(),
+            },
+        };
+
+        let next = self.token_list.next()?;
+        if next.t_type != TokenType::Semicolon {
+            panic!("Expect `;` after loop condition.");
+        }
+
+        let next = self.token_list.next();
+        let increment = match next {
+            None => None,
+            Some(token) => match token.t_type {
+                TokenType::RightParen => None,
+                _ => self.expression(),
+            },
+        };
+
+        let next = self.token_list.next()?;
+        if next.t_type != TokenType::RightParen {
+            panic!("Expect `)` after `for` clauses.");
+        }
+
+        let mut written_body = self.next_stmt();
+        if increment != None {
+            let incr = Stmt::Expr(increment?);
+            let stmt_vec = vec![written_body?, incr];
+            written_body = Some(Stmt::Block(Block { stmt_vec }));
+        }
+
+        let condition = if written_condition == None {
+            Expr::Literal(Literal {
+                token: Token {
+                    t_type: TokenType::True,
+                    lexeme: "true".into(),
+                    literal: token::Literal::Boolean(true),
+                    line: next.line,
+                },
+            })
+        } else {
+            written_condition?
+        };
+
+        let body = Box::new(written_body?);
+
+        let inner_for = Stmt::While(While { condition, body });
+
+        let desugared_for = if initializer != None {
+            Stmt::Block(Block {
+                stmt_vec: vec![initializer?, inner_for],
+            })
+        } else {
+            inner_for
+        };
+
+        Some(desugared_for)
+    }
     fn if_statement(&mut self) -> Option<Stmt> {
         let next_token = self.token_list.peek();
         if next_token?.t_type != TokenType::LeftParen {
@@ -460,7 +542,7 @@ mod tests {
     use super::*;
     use crate::lox::expr::Literal as ExprLiteral;
     use crate::lox::token::Literal;
-    use pretty_assertions::{assert_eq, assert_ne};
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn literal_string() {
