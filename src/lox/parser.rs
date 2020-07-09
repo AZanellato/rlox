@@ -145,7 +145,7 @@ impl<'a> Parser<'a> {
     }
 
     fn block_statement(&mut self) -> Option<Stmt> {
-        let mut statements = Vec::new();
+        let mut statements = vec![];
 
         while let Some(next_token) = self.token_list.peek() {
             if next_token.t_type == TokenType::RightBrace {
@@ -158,6 +158,10 @@ impl<'a> Parser<'a> {
 
         if self.token_list.peek() == None {
             panic!("Missing closing bracket");
+        }
+
+        if self.token_list.peek()?.t_type == TokenType::RightBrace {
+            self.token_list.next();
         }
 
         Some(Stmt::Block(Block {
@@ -180,23 +184,22 @@ impl<'a> Parser<'a> {
             }
             _ => self.stmt_expr(),
         };
-        let next = self.token_list.next();
+        let peek = self.token_list.peek();
 
-        let written_condition = match next {
+        let written_condition = match peek {
             None => None,
             Some(token) => match token.t_type {
                 TokenType::Semicolon => None,
                 _ => self.expression(),
             },
         };
-
         let next = self.token_list.next()?;
         if next.t_type != TokenType::Semicolon {
             panic!("Expect `;` after loop condition.");
         }
 
-        let next = self.token_list.next();
-        let increment = match next {
+        let peek = self.token_list.peek();
+        let increment = match peek {
             None => None,
             Some(token) => match token.t_type {
                 TokenType::RightParen => None,
@@ -292,10 +295,6 @@ impl<'a> Parser<'a> {
 
         let next_stmt = self.next_stmt()?;
 
-        if self.token_list.next()?.t_type != TokenType::RightBrace {
-            println!("Expected a block after while condition");
-            return None;
-        }
         let body = Box::new(next_stmt);
         let result = Stmt::While(While { condition, body });
         Some(result)
@@ -529,8 +528,8 @@ impl<'a> Parser<'a> {
             TokenType::EOF | TokenType::Semicolon => None,
             _ => {
                 self.error = true;
-                println!("Expecting an expression");
-                println!("{:?}", peek.t_type);
+                println!("Token not supported on primary - Expecting an expression");
+                println!("{:?}", peek.line);
                 None
             }
         }
@@ -716,7 +715,110 @@ mod tests {
     }
 
     #[test]
+    fn for_loop_parse() {
+        // for(var a = 1; a < 2; a = a + 1) {}
+        // should parse as:
+        // {
+        //  var a = 1;
+        //  while(a < 2) {
+        //   a = a + 1;
+        //  }
+        // }
+        let for_kw = Token::new(TokenType::For, "for".to_owned(), Literal::None, 1);
+        let left_paren = Token::new(TokenType::LeftParen, "(".to_owned(), Literal::None, 1);
+        let var_kw = Token::new(TokenType::Var, "var".to_owned(), Literal::None, 1);
+        let variable = Token::new(TokenType::Identifier, "a".to_owned(), Literal::None, 1);
+        let equal_sign = Token::new(TokenType::Equal, "=".to_owned(), Literal::None, 1);
+        let one = Token::new(TokenType::Number, "1".to_owned(), Literal::F64(1.0), 1);
+        let semicolon = Token::new(TokenType::Semicolon, ";".to_owned(), Literal::None, 1);
+
+        let identifier = Token::new(TokenType::Identifier, "a".to_owned(), Literal::None, 1);
+        let less = Token::new(TokenType::Less, "<".to_owned(), Literal::None, 1);
+        let two = Token::new(TokenType::Number, "2".to_owned(), Literal::F64(2.0), 1);
+        let semicolon_two = Token::new(TokenType::Semicolon, ";".to_owned(), Literal::None, 1);
+
+        let identifier_two = Token::new(TokenType::Identifier, "a".to_owned(), Literal::None, 1);
+        let equal_sign_two = Token::new(TokenType::Equal, "=".to_owned(), Literal::None, 1);
+        let identifier_three = Token::new(TokenType::Identifier, "a".to_owned(), Literal::None, 1);
+        let plus_sign = Token::new(TokenType::Plus, "+".to_owned(), Literal::None, 1);
+        let one_again = Token::new(TokenType::Number, "1".to_owned(), Literal::F64(1.0), 1);
+        let right_paren = Token::new(TokenType::RightParen, ")".to_owned(), Literal::None, 1);
+        let left_bracket = Token::new(TokenType::LeftBrace, "{".to_owned(), Literal::None, 1);
+        let right_bracket = Token::new(TokenType::RightBrace, "}".to_owned(), Literal::None, 1);
+
+        let tokens = vec![
+            for_kw,
+            left_paren,
+            var_kw,
+            variable.clone(),
+            equal_sign,
+            one.clone(),
+            semicolon,
+            identifier,
+            less.clone(),
+            two.clone(),
+            semicolon_two,
+            identifier_two,
+            equal_sign_two,
+            identifier_three,
+            plus_sign.clone(),
+            one_again,
+            right_paren,
+            left_bracket,
+            right_bracket,
+        ];
+
+        let declaration = Stmt::Declaration(stmt::Var {
+            value: Expr::Literal(super::Literal { token: one.clone() }),
+            name: 'a'.to_string(),
+        });
+        let while_left = Expr::Var(super::Var {
+            name: variable.clone(),
+        });
+        let while_right = Expr::Literal(super::Literal { token: two.clone() });
+        let while_greater_expr = Expr::Binary(Binary {
+            left: Box::new(while_left),
+            right: Box::new(while_right),
+            operator: less.clone(),
+        });
+
+        let block_var = Expr::Var(super::Var {
+            name: variable.clone(),
+        });
+        let block_value = Expr::Literal(super::Literal { token: one.clone() });
+        let block_right = Expr::Binary(Binary {
+            left: Box::new(block_var),
+            right: Box::new(block_value),
+            operator: plus_sign.clone(),
+        });
+        let block_left = Stmt::Expr(Expr::Assignment(super::Assignment {
+            name: variable,
+            value: Box::new(block_right),
+        }));
+
+        let inner_block_for = Stmt::Block(super::Block { stmt_vec: vec![] });
+        let block = Stmt::Block(super::Block {
+            stmt_vec: vec![inner_block_for, block_left],
+        });
+
+        let while_stmt = Stmt::While(While {
+            condition: while_greater_expr,
+            body: Box::new(block),
+        });
+
+        let desugared_for = Stmt::Block(super::Block {
+            stmt_vec: vec![declaration, while_stmt],
+        });
+
+        let mut parser = Parser::new(&tokens);
+        let mut stmt = parser.parse();
+        assert_eq!(desugared_for, stmt.pop().unwrap());
+    }
+    #[test]
     fn while_statement_parse() {
+        // while(a < 2) {
+        //   a = a + 1;
+        // }
         let while_kw = Token::new(TokenType::While, "while".to_owned(), Literal::None, 1);
 
         let left_paren = Token::new(TokenType::LeftParen, "(".to_owned(), Literal::None, 1);
