@@ -7,6 +7,6 @@ languages implementations in general. The code is not perfect by any means and o
 
 Right now, the most tested part is the `REPL`, which works by just running cargo run on the terminal. 
 
-I'll try to keep the README update to date in what part of the book I'm on. 
+I'll try to keep the README up to date in what part of the book I'm on. 
 
-Working on:  [II.9 - Control Flow](http://www.craftinginterpreters.com/control-flow.html)
+Working on:  [II.10 - Functions](http://www.craftinginterpreters.com/functions.html)
