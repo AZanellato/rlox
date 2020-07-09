@@ -1,4 +1,3 @@
-pub mod ast_printer;
 pub mod expr;
 pub mod interpreter;
 pub mod parser;
@@ -11,7 +10,7 @@ extern crate derive_more;
 extern crate phf;
 extern crate rustyline;
 
-use interpreter::Interpreter;
+use self::interpreter::interpreter::Interpreter;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
@@ -29,7 +28,7 @@ impl Lox {
         }
     }
 
-    pub fn prompt(&mut self) -> () {
+    pub fn prompt(&mut self) {
         let mut interpreter = Interpreter::new();
         let mut rl = Editor::<()>::new();
         loop {
@@ -56,8 +55,8 @@ impl Lox {
         }
     }
 
-    pub fn runfile(&self, path: std::path::PathBuf) -> () {
-        let source = fs::read_to_string(path).unwrap_or("".to_string());
+    pub fn runfile(&self, path: std::path::PathBuf) {
+        let source = fs::read_to_string(path).unwrap_or_else(|_| "".to_string());
         let mut interpreter = Interpreter::new();
         self.run(&mut interpreter, source);
         if self.had_errors {
@@ -67,20 +66,11 @@ impl Lox {
 
     fn run(&self, interpreter: &mut Interpreter, source: String) {
         let mut scanner = scanner::Scanner::new(&source);
-        let tokens = scanner.scan_tokens();
+        let tokens = scanner.scan_text();
         let mut parser = parser::Parser::new(tokens);
         let statements = parser.parse();
         for node in statements {
             interpreter.evaluate_node(node);
         }
     }
-
-    // fn error(&mut self, line: u32, message: String) -> () {
-    //     self.report(line, "".to_string(), message);
-    // }
-
-    // fn report(&mut self, line_number: u32, locale: String, error_msg: String) -> () {
-    //     println!("line: {} Error {}: {}", line_number, locale, error_msg);
-    //     self.had_errors = true;
-    // }
 }

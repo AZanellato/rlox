@@ -10,3 +10,4 @@ edition = "2018"
 rustyline = "5.0.2"
 phf = { version = "0.8", features = ["macros"] }
 derive_more = "0.99.2"
+pretty_assertions = "0.6.1"
