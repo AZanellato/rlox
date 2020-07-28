@@ -1,5 +1,5 @@
 use super::environment::Environment;
-use super::value::Value;
+use super::object::{LoxFn, Object, Value};
 use crate::lox::expr::Var as Var_expr;
 use crate::lox::expr::{Assignment, Binary, Expr, Literal, Logical, Unary};
 use crate::lox::stmt::{Block, IfStmt, Stmt, Var, While};

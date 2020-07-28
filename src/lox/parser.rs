@@ -1,4 +1,4 @@
-use super::expr::{Assignment, Binary, Expr, Grouping, Literal, Logical, Unary, Var};
+use super::expr::*;
 use super::stmt::{self, Block, IfStmt, Stmt, While};
 use super::token::{self, Token, TokenType};
 use std::iter::Peekable;

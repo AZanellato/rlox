@@ -1,5 +1,17 @@
+use crate::lox::stmt::Stmt;
 use derive_more::Display;
 use std::ops::{Add, Div, Mul, Neg, Not, Sub};
+
+pub enum Object {
+    Callable(LoxFn),
+    Value(Value),
+}
+
+pub struct LoxFn {
+    pub body: Vec<Stmt>,
+    pub params: Vec<Value>,
+    pub arity: usize,
+}
 
 #[derive(PartialEq, PartialOrd, Debug, Display, Clone)]
 pub enum Value {
