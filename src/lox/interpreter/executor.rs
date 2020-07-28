@@ -38,6 +38,7 @@ impl Executor {
             Expr::Var(expr) => self.evaluate_variable(expr),
             Expr::Assignment(expr) => self.evaluate_assignment(expr),
             Expr::Grouping(_) => panic!("Grouping not implemented"),
+            Expr::Call(_) => panic!("Call not implemented"),
         }
     }
 
