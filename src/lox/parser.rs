@@ -1,4 +1,4 @@
-use super::expr::{Assignment, Binary, Expr, Grouping, Literal, Logical, Unary, Var};
+use super::expr::*;
 use super::stmt::{self, Block, IfStmt, Stmt, While};
 use super::token::{self, Token, TokenType};
 use std::iter::Peekable;
@@ -493,8 +493,55 @@ impl<'a> Parser<'a> {
             let expr = Box::new(self.unary()?);
             Some(Expr::Unary(Unary { expr, operator }))
         } else {
-            self.primary()
+            self.call()
         }
+    }
+
+    fn call(&mut self) -> Option<Expr> {
+        let mut expr = self.primary()?;
+
+        loop {
+            let peeked_next_token = self.token_list.peek();
+            if peeked_next_token?.t_type == TokenType::LeftParen {
+                self.token_list.next();
+                expr = self.finish_call(expr)?;
+            } else {
+                break;
+            }
+        }
+
+        Some(expr)
+    }
+
+    fn finish_call(&mut self, expr: Expr) -> Option<Expr> {
+        let mut args: Vec<Expr> = vec![];
+
+        let peeked_next_token = self.token_list.peek();
+        if peeked_next_token?.t_type != TokenType::RightParen {
+            args.push(self.expression()?);
+            loop {
+                let peeked_next_token = self.token_list.peek();
+                if peeked_next_token?.t_type == TokenType::Comma {
+                    self.token_list.next();
+                    args.push(self.expression()?);
+                } else {
+                    break;
+                }
+            }
+        }
+
+        let paren = self.token_list.next()?.clone();
+        if paren.t_type != TokenType::RightParen {
+            panic!("Expect ')' after args");
+        }
+
+        let callee = Box::new(expr);
+
+        Some(Expr::Call(Call {
+            callee,
+            paren,
+            args,
+        }))
     }
 
     fn primary(&mut self) -> Option<Expr> {

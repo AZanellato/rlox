@@ -9,6 +9,14 @@ pub enum Expr {
     Var(Var),
     Assignment(Assignment),
     Unary(Unary),
+    Call(Call),
+}
+
+#[derive(PartialEq, Clone, Debug)]
+pub struct Call {
+    pub callee: Box<Expr>,
+    pub paren: Token,
+    pub args: Vec<Expr>,
 }
 
 #[derive(PartialEq, Clone, Debug)]

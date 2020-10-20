@@ -10,7 +10,7 @@ extern crate derive_more;
 extern crate phf;
 extern crate rustyline;
 
-use self::interpreter::interpreter::Interpreter;
+use self::interpreter::executor::Executor;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
@@ -29,7 +29,7 @@ impl Lox {
     }
 
     pub fn prompt(&mut self) {
-        let mut interpreter = Interpreter::new();
+        let mut interpreter = Executor::new();
         let mut rl = Editor::<()>::new();
         loop {
             let readline = rl.readline(">> ");
@@ -57,14 +57,14 @@ impl Lox {
 
     pub fn runfile(&self, path: std::path::PathBuf) {
         let source = fs::read_to_string(path).unwrap_or_else(|_| "".to_string());
-        let mut interpreter = Interpreter::new();
+        let mut interpreter = Executor::new();
         self.run(&mut interpreter, source);
         if self.had_errors {
             process::exit(1);
         }
     }
 
-    fn run(&self, interpreter: &mut Interpreter, source: String) {
+    fn run(&self, interpreter: &mut Executor, source: String) {
         let mut scanner = scanner::Scanner::new(&source);
         let tokens = scanner.scan_text();
         let mut parser = parser::Parser::new(tokens);

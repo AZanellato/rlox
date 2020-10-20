@@ -1,27 +1,18 @@
 use super::environment::Environment;
+use super::object::{LoxFn, Object, Value};
 use crate::lox::expr::Var as Var_expr;
 use crate::lox::expr::{Assignment, Binary, Expr, Literal, Logical, Unary};
 use crate::lox::stmt::{Block, IfStmt, Stmt, Var, While};
 use crate::lox::token;
-use derive_more::Display;
 use std::cell::RefCell;
-use std::ops::{Add, Div, Mul, Neg, Not, Sub};
 use std::rc::Rc;
 
-#[derive(PartialEq, PartialOrd, Debug, Display, Clone)]
-pub enum Value {
-    String(String),
-    F64(f64),
-    Boolean(bool),
-    Nil,
-}
-
 #[derive(Debug)]
-pub struct Interpreter {
+pub struct Executor {
     env: Rc<RefCell<Environment>>,
 }
 
-impl Interpreter {
+impl Executor {
     pub fn new() -> Self {
         let env = Rc::new(RefCell::new(Environment::new()));
         Self { env }
@@ -47,6 +38,7 @@ impl Interpreter {
             Expr::Var(expr) => self.evaluate_variable(expr),
             Expr::Assignment(expr) => self.evaluate_assignment(expr),
             Expr::Grouping(_) => panic!("Grouping not implemented"),
+            Expr::Call(_) => panic!("Call not implemented"),
         }
     }
 
@@ -175,83 +167,6 @@ impl Interpreter {
         }
     }
 }
-impl Value {
-    pub fn truthyness(&self) -> bool {
-        match *self {
-            Value::Boolean(boolean) => boolean,
-            Value::Nil => false,
-            _ => true,
-        }
-    }
-}
-
-impl Add for Value {
-    type Output = Self;
-
-    fn add(self, rhs: Self) -> Self {
-        match (self, rhs) {
-            (Value::F64(left), Value::F64(right)) => Value::F64(left + right),
-            (Value::String(left), Value::String(right)) => {
-                let mut new_string = left;
-                new_string.push_str(&right);
-                Value::String(new_string)
-            }
-            (_, _) => panic!("Not implemented"),
-        }
-    }
-}
-
-impl Sub for Value {
-    type Output = Self;
-
-    fn sub(self, rhs: Self) -> Self {
-        match (self, rhs) {
-            (Value::F64(left), Value::F64(right)) => Value::F64(left - right),
-            (_, _) => panic!("Not implemented"),
-        }
-    }
-}
-
-impl Div for Value {
-    type Output = Self;
-
-    fn div(self, rhs: Self) -> Self {
-        match (self, rhs) {
-            (Value::F64(left), Value::F64(right)) => Value::F64(left / right),
-            (_, _) => panic!("Not implemented"),
-        }
-    }
-}
-
-impl Mul for Value {
-    type Output = Self;
-
-    fn mul(self, rhs: Self) -> Self {
-        match (self, rhs) {
-            (Value::F64(left), Value::F64(right)) => Value::F64(left * right),
-            (_, _) => panic!("Not implemented"),
-        }
-    }
-}
-
-impl Neg for Value {
-    type Output = Self;
-
-    fn neg(self) -> Self {
-        match self {
-            Value::F64(value) => Value::F64(-value),
-            _ => panic!("Expected a number, got: {:?}", self),
-        }
-    }
-}
-
-impl Not for Value {
-    type Output = Self;
-
-    fn not(self) -> Self {
-        Value::Boolean(!self.truthyness())
-    }
-}
 
 mod tests {
     use super::*;
@@ -260,7 +175,7 @@ mod tests {
 
     #[test]
     fn literal_string() {
-        let mut interpreter = Interpreter::new();
+        let mut interpreter = Executor::new();
         let expr = Expr::Literal(ExprLiteral {
             token: Token::new(
                 TokenType::String,
@@ -276,7 +191,7 @@ mod tests {
 
     #[test]
     fn negation() {
-        let mut interpreter = Interpreter::new();
+        let mut interpreter = Executor::new();
         let operator = Token::new(TokenType::Bang, "!".to_owned(), Literal::None, 1);
 
         let left = Expr::Literal(super::Literal {
@@ -293,7 +208,7 @@ mod tests {
 
     #[test]
     fn addition() {
-        let mut interpreter = Interpreter::new();
+        let mut interpreter = Executor::new();
         let operator = Token::new(TokenType::Plus, "+".to_owned(), Literal::None, 1);
 
         let left = Expr::Literal(super::Literal {
@@ -314,7 +229,7 @@ mod tests {
 
     #[test]
     fn equality() {
-        let mut interpreter = Interpreter::new();
+        let mut interpreter = Executor::new();
         let operator = Token::new(TokenType::EqualEqual, "==".to_owned(), Literal::None, 1);
 
         let left = Expr::Literal(super::Literal {
@@ -335,7 +250,7 @@ mod tests {
 
     #[test]
     fn comparison() {
-        let mut interpreter = Interpreter::new();
+        let mut interpreter = Executor::new();
         let operator = Token::new(TokenType::Greater, ">".to_owned(), Literal::None, 1);
 
         let left = Expr::Literal(super::Literal {
@@ -356,7 +271,7 @@ mod tests {
 
     #[test]
     fn multiplication() {
-        let mut interpreter = Interpreter::new();
+        let mut interpreter = Executor::new();
         let operator = Token::new(TokenType::Star, "*".to_owned(), Literal::None, 1);
 
         let left = Expr::Literal(super::Literal {
@@ -421,7 +336,7 @@ mod tests {
             body: Box::new(block),
         });
 
-        let mut interpreter = Interpreter::new();
+        let mut interpreter = Executor::new();
 
         interpreter.evaluate_node(var_dcl);
         interpreter.evaluate_node(while_stmt);
